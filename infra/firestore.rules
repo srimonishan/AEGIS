@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// Deployed with: firebase deploy --only firestore:rules
+// (or the Firestore Admin API directly -- see infra/README.md).
+//
+// Everything defaults to fully closed. The three services (ingestion,
+// orchestrator, followup-worker) never go through these rules at all --
+// they use the Admin SDK / IAM-scoped service accounts (see iam.tf),
+// which bypass security rules entirely. These rules exist ONLY to gate
+// what the ops dashboard's browser-side Firestore client may read.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Dashboard-visible collections: any signed-in ops user may read,
+    // nobody may write from the client (all writes happen server-side).
+    match /user_reports/{reportId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /global_patterns/{patternId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Never exposed to the dashboard or any client: these hold (or key
+    // into) PII, even though user_directory's values are ciphertext.
+    match /user_directory/{userId} {
+      allow read, write: if false;
+    }
+    match /family_links/{userId} {
+      allow read, write: if false;
+    }
+    match /user_history/{userId} {
+      allow read, write: if false;
+    }
+    match /follow_ups/{followUpId} {
+      allow read, write: if false;
+    }
+    match /pending_family_links/{code} {
+      allow read, write: if false;
+    }
+    match /pending_deletions/{userId} {
+      allow read, write: if false;
+    }
+  }
+}

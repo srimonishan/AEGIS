@@ -1,0 +1,27 @@
+# Copy to terraform.tfvars and fill in. Never commit the real file --
+# it's already covered by the root .gitignore.
+#
+# NOT here: meta_app_secret, meta_verify_token, meta_access_token,
+# aegis_user_id_pepper, global_pattern_salt. Those five are added
+# out-of-band via `gcloud secrets versions add` AFTER your first
+# `terraform apply` creates the Secret Manager containers -- see the
+# header comment in secrets.tf for the exact commands. Keeping them out
+# of this file means they never touch Terraform state or a .tfvars file.
+
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+gemini_model = "gemini-2.5-pro" # must be enabled in this project/region's Vertex AI
+
+meta_phone_number_id = "meta-phone-number-id"
+
+media_gcs_bucket_name = "your-project-id-aegis-media"
+
+alert_notification_email = "you@example.com"
+billing_account_id       = "XXXXXX-XXXXXX-XXXXXX" # gcloud billing accounts list
+monthly_budget_usd       = 50
+
+# Filled in after the first `docker build` + push -- see infra/README.md
+image_ingestion       = "us-central1-docker.pkg.dev/your-project-id/aegis/ingestion:latest"
+image_orchestrator    = "us-central1-docker.pkg.dev/your-project-id/aegis/orchestrator:latest"
+image_followup_worker = "us-central1-docker.pkg.dev/your-project-id/aegis/followup-worker:latest"

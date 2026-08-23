@@ -1,0 +1,10 @@
+-e ../../shared
+google-adk==2.7.1
+google-cloud-aiplatform>=1.70.0
+google-cloud-firestore>=2.19.0
+google-cloud-pubsub>=2.23.0
+google-cloud-kms>=2.24.2
+fastapi
+uvicorn[standard]
+httpx
+google-auth

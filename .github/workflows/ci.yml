@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  python-tests:
+    name: Python tests (incl. Firestore emulator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install shared package
+        run: pip install -e ./shared pytest
+
+      - name: Guardrail tests
+        run: |
+          cd shared
+          AEGIS_USER_ID_PEPPER=ci-pepper python -m pytest guardrails/tests -q
+
+      - name: Ingestion tests
+        run: |
+          cd services/ingestion
+          pip install -r requirements.txt
+          python -m pytest tests -q
+
+      - name: Agent-orchestrator + followup-worker dependencies
+        run: |
+          pip install -r services/agent-orchestrator/requirements.txt
+          pip install -r services/followup-worker/requirements.txt
+
+      # Real Firestore, not mocks -- this is what caught the
+      # mode="json"-breaks-range-queries bug during development. See
+      # docs in services/*/tests/test_firestore_integration.py.
+      - name: Start Firestore emulator
+        run: |
+          docker run -d --rm --name firestore-emu -p 8090:8080 \
+            gcr.io/google.com/cloudsdktool/cloud-sdk:emulators \
+            gcloud emulators firestore start --host-port=0.0.0.0:8080 --database-mode=firestore-native
+          for i in $(seq 1 15); do
+            curl -s http://localhost:8090/ >/dev/null 2>&1 && break
+            sleep 1
+          done
+
+      - name: Agent-orchestrator tests
+        run: |
+          cd services/agent-orchestrator
+          FIRESTORE_EMULATOR_HOST=localhost:8090 python -m pytest tests -q
+
+      - name: Follow-up worker tests
+        run: |
+          cd services/followup-worker
+          FIRESTORE_EMULATOR_HOST=localhost:8090 python -m pytest tests -q
+
+      - name: Stop Firestore emulator
+        if: always()
+        run: docker rm -f firestore-emu || true
+
+  dashboard-build:
+    name: Dashboard build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: dashboard/package-lock.json
+      - working-directory: dashboard
+        run: npm ci
+      - working-directory: dashboard
+        env:
+          VITE_FIREBASE_API_KEY: ci-placeholder
+          VITE_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: ci-placeholder
+        run: npm run build
+
+  docker-builds:
+    name: Docker image builds (no push)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [ingestion, agent-orchestrator, followup-worker]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.service }} image
+        run: docker build -f services/${{ matrix.service }}/Dockerfile -t aegis-${{ matrix.service }}:ci .
+
+  terraform-validate:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - working-directory: infra/terraform
+        run: |
+          # No real GCS backend/credentials in CI -- validate structure and
+          # provider-schema correctness only, the same boundary this repo
+          # documents everywhere else. Strip the backend block rather than
+          # deleting backend.tf so its bootstrap comment still gets
+          # fmt-checked.
+          cp backend.tf backend.tf.orig
+          awk '/^terraform {/{skip=1} skip&&/^}/{skip=0;next} !skip' backend.tf.orig > backend.tf
+          terraform init -backend=false
+          terraform validate
+          mv backend.tf.orig backend.tf
+          terraform fmt -check -recursive

@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+node_modules/
+dist/
+.env
+.env.local
+
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+!terraform.tfvars.example
+# .terraform.lock.hcl is intentionally NOT ignored -- it pins provider
+# versions and should be committed (Terraform's own recommendation).
+
+.DS_Store
