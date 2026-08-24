@@ -71,6 +71,11 @@ def get_user_report(report_id: str) -> Optional[UserReportDoc]:
 
 
 def upsert_user_report_status(report_id: str, user_id: str, **fields) -> None:
+    """Merges a PARTIAL status update -- see the matching (more detailed)
+    docstring on agent-orchestrator/firestore_client.py::upsert_user_report
+    for why `exclude_unset=True` is load-bearing here: without it, this
+    call would silently null out the verdict/confidence/reasoning_trace
+    the orchestrator already wrote for this report."""
     from schemas.enums import CaseStatus
 
     doc = UserReportDoc(
@@ -80,7 +85,7 @@ def upsert_user_report_status(report_id: str, user_id: str, **fields) -> None:
         **fields,
     )
     db().collection("user_reports").document(report_id).set(
-        doc.model_dump(mode="python"), merge=True
+        doc.model_dump(mode="python", exclude_unset=True), merge=True
     )
 
 

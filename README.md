@@ -122,7 +122,7 @@ and assumed correct:
 | Guardrails | 7/7 tests pass, including a real "ignore previous instructions" attempt and a zero-width-space evasion attempt | `pytest shared/guardrails/tests` |
 | Ingestion | 11/11 tests pass: signature verification (valid/tampered/wrong-secret/missing/malformed), webhook payload parsing (text/image/unsupported types), full POST flow with mocked publish, user_id hashing | `pytest services/ingestion/tests` |
 | Ingestion (container) | Built and ran the real Docker image; hit `/healthz` and the Meta verification handshake over real HTTP against the running container | `docker build` + `docker run` + `curl` |
-| Agent orchestrator | 26/26 tests pass: the full ADK tool-calling loop driven by a scripted fake LLM through all 5 tools + `finish_task`, a "monitor" path publishing a follow-up, proof that `before_model_callback` actually strips PII from the exact text the model receives, all 4 family-link commands, both data-deletion commands, and 3 tests against a **real Firestore emulator** (including a full `purge_user_data` erasure, verified actually gone, not just counted) | `pytest services/agent-orchestrator/tests` |
+| Agent orchestrator | 29/29 tests pass: the full ADK tool-calling loop driven by a scripted fake LLM through all 5 tools + `finish_task`, a "monitor" path publishing a follow-up, proof that `before_model_callback` actually strips PII from the exact text the model receives, all 4 family-link commands, both data-deletion commands, 4 tests against a **real Firestore emulator** (including a full `purge_user_data` erasure and a partial-update-clobbering regression, both verified actually gone/preserved, not just counted), and a regression test that forces real INFO-level logging to catch a bug that pytest's default logging level was silently hiding | `pytest services/agent-orchestrator/tests` |
 | Agent orchestrator (container) | Built and ran the real Docker image (all deps incl. `google-adk` installing cleanly); hit `/healthz` | `docker build` + `docker run` + `curl` |
 | Follow-up worker | 7/7 tests pass: escalates on new corroboration, closes after max cycles, reschedules with incremented attempt count, skips cases whose status already changed, marks failures without crashing the batch, plus 2 tests against a **real Firestore emulator** | `pytest services/followup-worker/tests` |
 | Follow-up worker (container) | Built and ran the real Docker image; failed exactly where expected (missing GCP ADC), proving the code path is correct up to the live-credentials boundary | `docker build` + `docker run` |
@@ -162,13 +162,69 @@ worker would never run, with no error pointing at why; and the billing
 budget's project filter needs the numeric project *number*, not the
 project ID string. All four fixed and re-validated.
 
-**What is *not* verified here, and needs your GCP project + WhatsApp
-credentials to check:** an actual live Gemini/Vertex AI call, an actual
-Meta webhook delivering a real message, and `terraform apply` actually
+**Then it was actually run live, for real, end to end.** A real Firestore
+emulator + a real Pub/Sub emulator + the real `ingestion` and
+`agent-orchestrator` Docker images were wired together on a shared docker
+network. A correctly HMAC-signed, WhatsApp-shaped webhook (a realistic
+scam message) was POSTed to the real ingestion service, which verified
+the signature and published for real; the resulting Pub/Sub message was
+relayed to the orchestrator's real `/pubsub/push` endpoint (the Pub/Sub
+emulator doesn't implement push delivery — a known limitation — so this
+one hop was a pull-then-POST relay script standing in for it, hitting the
+identical endpoint code real push would). With a real Gemini API key
+supplied, the orchestrator made 21 real, successfully-authenticated calls
+to the Gemini API (`backend: GoogleLLMVariant.GEMINI_API` in the logs)
+across several runs. This is what caught one more real bug:
+`_before_tool_callback` logged `extra={"args": ...}` — `args` is a
+reserved `LogRecord` attribute, so every tool call raised `KeyError`, but
+*only* once logging is actually enabled at INFO level, which pytest's
+default WARNING root logger never does — invisible to the entire test
+suite, including the scripted-LLM tool-loop test, until this ran with
+real logging on. Fixed (`tool_args` instead of `args`) and pinned down
+with `tests/test_agent_callbacks_logging.py`, which forces INFO logging
+via `caplog.at_level` specifically so this bug class can't go quiet
+again — confirmed it actually catches the bug by reverting the fix and
+re-running before reapplying it.
+
+**The next day, the full loop completed — and found one more real bug.**
+The first two attempts hit free-tier quota ceilings mid-loop (a
+`gemini-3.5-flash` daily cap of 20 requests, then a `gemini-3.1-flash-lite`
+per-minute cap of 15 — external limits on the personal key used, not a
+code problem). On the next attempt, the full 6-call chain
+(`analyze_content` → `check_sender_reputation` ×2 → `cross_reference_reports`
+×2 → `draft_protective_action` → `escalate_or_close` → `finish_task`)
+completed with a 200, and the model got it right: `verdict: scam`,
+`confidence: 1.0`, patterns `["urgency", "credential_phishing"]`, a
+genuinely well-composed plain-language explanation and report draft — but
+reading the Firestore doc back showed `verdict: None` and only a 4-step
+reasoning trace, not the full run.
+
+The bug: `escalate_or_close`'s Firestore write only *means* to set
+`{report_id, user_id, status}`, but `upsert_user_report` dumped the whole
+`UserReportDoc` including every other field at its Python default (`None`,
+`[]`) — and Firestore's `merge=True` still overwrites a field if it's
+*present* in the payload, default value or not. So each partial status
+update silently nulled out the verdict, confidence, and reasoning trace a
+*previous* call had just written. Exactly the kind of interaction a
+mocked unit test won't catch (each Firestore function was tested in
+isolation, never in this exact call sequence). Fixed by switching to
+`model_dump(mode="python", exclude_unset=True)` in both
+`agent-orchestrator` and `followup-worker`'s equivalent function, so a
+partial update only touches the fields its caller explicitly set.
+Verified by reverting the fix, confirming a new regression test
+(`test_later_partial_upsert_does_not_clobber_earlier_verdict_and_trace`)
+fails with the exact real symptom, then reapplying it and re-running the
+whole live demo end-to-end: final Firestore state now shows the correct
+verdict, both drafts, and the complete 17-step reasoning trace intact.
+
+**What is still not verified, and needs your GCP project + WhatsApp
+credentials to check:** an actual Meta webhook delivering a real message
+(vs. a correctly-signed synthetic one), and `terraform apply` actually
 succeeding end-to-end against a real project (validate + a plan that
 fails exactly at the credentials boundary is as far as this sandbox can
-go). Everything upstream of that boundary is real, working code — that
-boundary is a credentials/access problem, not an unfinished-code problem.
+go). Everything upstream of that boundary is real, working code that has
+now been exercised live end-to-end against a real Gemini model, not just
+unit tested.
 
 ## Guardrail design (summary)
 

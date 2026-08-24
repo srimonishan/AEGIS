@@ -29,7 +29,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 import firestore_client  # noqa: E402
-from schemas.enums import CaseStatus, PendingLinkStatus  # noqa: E402
+from schemas.enums import CaseStatus, ManipulationPattern, PendingLinkStatus, Verdict  # noqa: E402
 from schemas.firestore_models import FamilyLinkDoc, PendingFamilyLinkDoc, UserReportDoc  # noqa: E402
 
 
@@ -125,3 +125,47 @@ def test_purge_user_data_actually_erases_everything_real():
     # the CONTACT gets deactivated.
     other_link = firestore_client.get_family_link(other_requester)
     assert other_link is None  # deactivated (active=False), so the getter correctly returns None
+
+
+def test_later_partial_upsert_does_not_clobber_earlier_verdict_and_trace():
+    """Reproduces a real bug found by actually running the full agent loop:
+    draft_protective_action writes verdict/confidence/report_draft, then
+    escalate_or_close writes only {report_id, user_id, status} -- without
+    exclude_unset=True, that second write nulls out everything the first
+    one wrote, because Firestore's merge=True still replaces any field
+    that IS present in the payload dict, and model_dump() without
+    exclude_unset includes every field at its Python default."""
+    report_id = f"r-{uuid.uuid4().hex[:8]}"
+    user_id = f"u-{uuid.uuid4().hex[:8]}"
+
+    # Step 1: draft_protective_action's write (a real verdict + trace entries).
+    firestore_client.upsert_user_report(
+        UserReportDoc(
+            report_id=report_id,
+            user_id=user_id,
+            status=CaseStatus.OPEN,
+            verdict=Verdict.SCAM,
+            confidence=0.93,
+            manipulation_patterns=[ManipulationPattern.URGENCY],
+            plain_language_explanation="This looks like a phishing scam.",
+            report_draft="User received a phishing message.",
+        )
+    )
+    firestore_client.append_reasoning_trace(report_id, {"tool": "analyze_content", "phase": "start"})
+    firestore_client.append_reasoning_trace(report_id, {"tool": "analyze_content", "phase": "end"})
+
+    # Step 2: escalate_or_close's write -- ONLY status, nothing else.
+    firestore_client.upsert_user_report(
+        UserReportDoc(report_id=report_id, user_id=user_id, status=CaseStatus.CLOSED)
+    )
+
+    # The verdict, confidence, report content, and trace from step 1 must
+    # all have survived step 2's partial update.
+    final = firestore_client.get_user_report(report_id)
+    assert final.status == CaseStatus.CLOSED  # step 2's actual change did apply
+    assert final.verdict == Verdict.SCAM
+    assert final.confidence == 0.93
+    assert final.manipulation_patterns == [ManipulationPattern.URGENCY]
+    assert final.plain_language_explanation == "This looks like a phishing scam."
+    assert final.report_draft == "User received a phishing message."
+    assert len(final.reasoning_trace) == 2

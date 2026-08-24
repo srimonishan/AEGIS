@@ -50,9 +50,24 @@ def fingerprint_entity(entity: str) -> str:
 
 
 def upsert_user_report(doc: UserReportDoc) -> None:
+    """Merges a PARTIAL update into user_reports/{report_id}.
+
+    Uses `exclude_unset=True` deliberately: callers construct a
+    `UserReportDoc` passing only the fields they actually mean to change
+    (e.g. escalate_or_close passes only report_id/user_id/status). Without
+    exclude_unset, `model_dump()` would include every other field at its
+    Python default (None, [], False) and Firestore's merge=True would
+    still overwrite those onto the existing document -- silently wiping
+    out the verdict/confidence/reasoning_trace a *previous* call (e.g.
+    draft_protective_action) had just written. Found by actually running
+    the full agent loop against real Firestore: the final verdict/
+    reasoning_trace was empty despite the agent clearly having reasoned
+    through it (visible in the one surviving trace entry). See
+    tests/test_firestore_integration.py for the regression test.
+    """
     doc.updated_at = datetime.now(timezone.utc)
     db().collection("user_reports").document(doc.report_id).set(
-        doc.model_dump(mode="python"), merge=True
+        doc.model_dump(mode="python", exclude_unset=True), merge=True
     )
 
 

@@ -48,7 +48,7 @@ dashboard with Firebase Auth, GitHub Actions CI.
 
 ## Step 0: verify the baseline before changing anything
 
-  # Python tests (51 should pass; 2+2 of them need a Firestore emulator,
+  # Python tests (54 should pass; 3+2 of them need a Firestore emulator,
   # see "how to run the emulator" below, otherwise they self-skip)
   cd shared && python -m pytest guardrails/tests -q
   cd services/ingestion && python -m pytest tests -q
@@ -106,8 +106,10 @@ just ran, not this document — something changed since this was written.
   adversarial forwarded content must never be able to trigger them via
   embedded text. Read the module docstrings for the full reasoning
   before "simplifying" this by making them agent tools.
-  26 tests (incl. 3 against a real Firestore emulator), real docker
-  build+run verified.
+  28 tests (incl. 3 against a real Firestore emulator and 2 that force
+  real INFO-level logging — see "bugs already fixed" below for why that
+  matters), real docker build+run verified, AND actually run live
+  end-to-end against a real Gemini API key (see "live run" section below).
 - Stage 5: Firestore schema — user_reports, global_patterns,
   family_links, pending_family_links, pending_deletions, user_history,
   user_directory (KMS-encrypted contact, see below), follow_ups.
@@ -165,6 +167,71 @@ just ran, not this document — something changed since this was written.
   uses a range/inequality filter — mocked unit tests will not catch a
   serialization mismatch like the one above. Pattern already established
   in services/*/tests/test_firestore_integration.py.
+- Never pass a key named `args` (or `msg`, `message`, `asctime`, or any
+  other reserved LogRecord attribute) in a `logger.X(..., extra={...})`
+  call — it raises `KeyError` at log time, but ONLY once logging is
+  actually enabled at INFO+ (pytest's root logger defaults to WARNING,
+  so this is invisible under the normal test suite). Found via
+  `_before_tool_callback`'s `extra={"args": ...}` — fixed to
+  `"tool_args"`. Regression test:
+  services/agent-orchestrator/tests/test_agent_callbacks_logging.py,
+  which explicitly forces INFO via `caplog.at_level` — copy that pattern
+  for any other logger.info/warning/error extra= dict you add.
+
+## A live end-to-end run has now actually happened (not just unit tests)
+
+A real Firestore emulator + real Pub/Sub emulator + the real ingestion
+and agent-orchestrator Docker images were wired together on a docker
+network, a correctly-signed synthetic WhatsApp webhook was sent through
+real ingestion, relayed through Pub/Sub (emulator doesn't support push
+delivery, so a pull-then-POST relay script stood in for that one hop),
+and with a user-supplied real Gemini API key, the orchestrator made 21
+real authenticated calls to Gemini (`backend: GoogleLLMVariant.GEMINI_API`
+in the logs -- direct Gemini Developer API via `GOOGLE_API_KEY`, not
+Vertex AI). This is what surfaced the reserved-LogRecord-key bug above.
+
+The full multi-turn tool-calling loop didn't complete end-to-end in that
+first session -- purely a free-tier API-key quota problem (gemini-3.5-flash's
+20-requests/day cap, then gemini-3.1-flash-lite's 15-requests/minute cap,
+both exhausted by testing), not a code problem.
+
+## The next day, the full loop completed -- and found one more real bug
+
+Same demo, same key, next day: the full 6-call chain (analyze_content ->
+check_sender_reputation x2 -> cross_reference_reports x2 ->
+draft_protective_action -> escalate_or_close -> finish_task) completed
+with a 200. The model correctly classified the test message (verdict:
+scam, confidence 1.0, patterns urgency + credential_phishing) and wrote a
+genuinely good plain-language explanation + report draft -- but the
+Firestore doc read back with verdict: None and only a 4-step reasoning
+trace, not the full run.
+
+Bug: `escalate_or_close`'s write only means to set
+{report_id, user_id, status}, but `upsert_user_report` dumped the WHOLE
+UserReportDoc (every other field at its Python default: None, []), and
+Firestore's merge=True still overwrites a field if it's PRESENT in the
+payload regardless of whether it's a real value or just a default --
+so each partial status update silently nulled out the verdict/
+confidence/reasoning_trace a PREVIOUS call (draft_protective_action) had
+just written. Exactly the kind of bug that only shows up when multiple
+partial writes to the same doc happen in sequence -- unit-testing each
+Firestore function in isolation never catches it.
+
+Fixed: `model_dump(mode="python", exclude_unset=True)` in both
+agent-orchestrator's `upsert_user_report` and followup-worker's
+`upsert_user_report_status` -- a partial update now only touches fields
+its caller explicitly set. Confirmed by reverting the fix and watching
+`test_later_partial_upsert_does_not_clobber_earlier_verdict_and_trace`
+fail with the exact real symptom, then reapplying and re-running the
+whole live demo: final Firestore state now shows the correct verdict,
+both drafts, and the complete 17-step reasoning trace intact.
+
+**Do not remove `exclude_unset=True` from either of those two functions.**
+If you add a new partial-update call site against `user_reports`, make
+sure the `UserReportDoc(...)` you construct only explicitly passes the
+fields you actually mean to change -- anything else falls back to
+`exclude_unset` correctly leaving it alone, but only if you don't
+explicitly pass it as `None`/default on purpose.
 
 ## What's NOT done yet (real gaps, prioritize based on what's asked)
 
@@ -172,10 +239,14 @@ just ran, not this document — something changed since this was written.
    run (no gcloud/real credentials were available where this was built)
    — validate/fmt/plan-to-the-credentials-boundary are as far as it's
    been verified. This is the single biggest next step.
-2. No real Gemini/Vertex AI call has ever been made (no API access in
-   the build environment) — the ADK tool-calling loop was verified with
-   a scripted fake LLM (see services/agent-orchestrator/tests/test_agent_tool_loop.py),
-   which proves the wiring but not actual model behavior/prompt quality.
+2. Real Gemini calls now DO work AND the full 6-call tool-loop has
+   completed successfully at least once (see "the next day" section
+   above) -- correct verdict, both drafts, full reasoning trace, all
+   confirmed in Firestore. What's NOT yet exercised: the "monitor" path
+   (escalate_or_close deciding to reschedule rather than close) under a
+   real model, family notification actually sending via WhatsApp (no
+   real Meta credentials in this environment), and repeated/concurrent
+   runs to check for rate-limit or state-race issues at higher volume.
 3. No real Meta WhatsApp webhook has ever delivered a message.
 4. Cloud Armor + an external HTTPS load balancer for real rate limiting
    on ingestion — currently only a blunt `max_instance_count` cap exists.
