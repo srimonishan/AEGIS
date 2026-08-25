@@ -36,8 +36,8 @@ REPORT = {
 }
 
 
-def test_healthz():
-    assert client.get("/healthz").json() == {"status": "ok"}
+def test_health():
+    assert client.get("/health").json() == {"status": "ok"}
 
 
 def test_valid_push_triggers_processing():

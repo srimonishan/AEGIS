@@ -40,9 +40,77 @@ _TYPE_MAP = {
 }
 
 
-@app.get("/healthz")
-def healthz():
+# NOTE: deliberately "/health", not "/healthz" -- on a Cloud Run service's
+# default *.run.app domain, Google's own front-end intercepts requests to
+# the literal path "/healthz" before they ever reach the container
+# (a legacy reserved health-check path from Kubernetes/Knative-era
+# serving infra) and answers with Google's generic 404 page instead of
+# forwarding the request. Discovered by actually deploying to a real GCP
+# project: every other path, including ones that don't exist, correctly
+# reached the app and got its own {"detail":"Not Found"}; only the exact
+# string "/healthz" never once reached the container, regardless of
+# auth, IAM, or how long we waited. No local Docker test can catch this
+# since it's specific to Cloud Run's real serving edge.
+@app.get("/health")
+def health():
     return {"status": "ok"}
+
+
+# Meta requires a reachable privacy policy URL before an app can be
+# published (even for WhatsApp test-number-only use) -- see App
+# Dashboard > Publish. Served as plain HTML directly from this service
+# rather than a separate hosted page, since this domain is already
+# public and TLS-terminated. Kept honest and specific to what AEGIS
+# actually does (see shared/guardrails and firestore_client.py's
+# purge_user_data) rather than generic boilerplate.
+_PRIVACY_POLICY_HTML = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>AEGIS Scam Guard -- Privacy Policy</title></head>
+<body style="font-family: sans-serif; max-width: 640px; margin: 2rem auto; line-height: 1.6;">
+<h1>Privacy Policy -- AEGIS Scam Guard</h1>
+<p>AEGIS is a WhatsApp-based assistant that helps you check whether a
+message you received is a scam. This page explains what we do with
+your data.</p>
+
+<h2>What we receive</h2>
+<p>When you forward a message to AEGIS, we receive the message content
+(text, or the image/audio you send) and your WhatsApp number.</p>
+
+<h2>What we do with it</h2>
+<ul>
+<li>Your WhatsApp number is one-way cryptographically hashed before
+being used as an internal identifier or stored in our database -- we
+do not store it in plain, reversible form except briefly, encrypted,
+solely so we can send you our reply.</li>
+<li>The message you forward is analyzed by an AI model to judge
+whether it's a scam, and a plain-language explanation is sent back to
+you on WhatsApp.</li>
+<li>If the message matches a scam pattern, an anonymized fingerprint of
+the scam (never anything identifying you) may be stored so we can
+recognize the same scam if others report it.</li>
+<li>We never sell your data or use it for advertising.</li>
+</ul>
+
+<h2>Family notifications</h2>
+<p>AEGIS can optionally notify a family contact you explicitly opt in
+via the <code>LINK FAMILY</code> command. Nothing is ever shared with a
+family contact without that explicit opt-in, and either side can
+revoke it at any time (<code>STOP FAMILY ALERTS</code>).</p>
+
+<h2>Deleting your data</h2>
+<p>Send <code>DELETE MY DATA</code> to AEGIS on WhatsApp at any time.
+After a confirmation step, every record we hold that is tied to you is
+permanently erased.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy can be sent to the WhatsApp number this
+app is connected to.</p>
+</body></html>"""
+
+
+@app.get("/privacy")
+def privacy_policy():
+    return Response(content=_PRIVACY_POLICY_HTML, media_type="text/html")
 
 
 @app.get("/webhook")

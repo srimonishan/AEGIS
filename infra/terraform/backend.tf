@@ -19,7 +19,7 @@
 
 terraform {
   backend "gcs" {
-    bucket = "REPLACE-WITH-your-project-id-aegis-tfstate"
+    bucket = "aegis-scamguard-69313-tfstate"
     prefix = "aegis"
   }
 }

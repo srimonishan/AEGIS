@@ -38,8 +38,12 @@ _agent = build_agent()
 _APP_NAME = "aegis"
 
 
-@app.get("/healthz")
-def healthz():
+# NOTE: deliberately "/health", not "/healthz" -- see the identical note
+# in services/ingestion/main.py. Google's front-end intercepts the exact
+# path "/healthz" on a Cloud Run service's default *.run.app domain
+# before it reaches the container; only found by deploying to real GCP.
+@app.get("/health")
+def health():
     return {"status": "ok"}
 
 
