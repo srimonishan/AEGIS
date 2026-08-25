@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 820" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+  <defs>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f5b942"/>
+    </marker>
+    <marker id="arrow-sky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf"/>
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6472"/>
+    </marker>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1600" height="820" fill="#0a0e14"/>
+  <rect x="0" y="0" width="1600" height="820" fill="none" stroke="#1c2430" stroke-width="2"/>
+
+  <!-- title -->
+  <text x="800" y="60" text-anchor="middle" font-size="44" font-weight="700" letter-spacing="4" fill="#2dd4bf">AEGIS</text>
+  <text x="800" y="89" text-anchor="middle" font-size="17" fill="#8b93a1">Autonomous scam-detection agent &#8212; real-time WhatsApp reasoning loop</text>
+
+  <!-- cross-reference loop (arcs above the main row, clear of everything else) -->
+  <path d="M 1300 226 C 1200 118, 1000 118, 900 200" fill="none" stroke="#5b6472" stroke-width="1.5" stroke-dasharray="4 5" marker-end="url(#arrow-muted)"/>
+  <text x="1100" y="128" text-anchor="middle" font-size="11.5" fill="#7a8290">cross-reference: shared threat memory across all users</text>
+
+  <!-- security boundary band -->
+  <rect x="272" y="196" width="968" height="222" rx="18" fill="#fb7185" opacity="0.055" stroke="#fb7185" stroke-opacity="0.35" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <text x="296" y="218" font-size="13" fill="#fb7185" font-weight="600">GUARDRAIL &#183; SECRET MANAGER &#183; CLOUD KMS BOUNDARY</text>
+
+  <!-- Phone node -->
+  <g>
+    <rect x="46" y="252" width="86" height="150" rx="14" fill="#131a24" stroke="#f5b942" stroke-width="2"/>
+    <rect x="58" y="270" width="62" height="98" rx="4" fill="#0a0e14" stroke="#33404f" stroke-width="1"/>
+    <circle cx="89" cy="386" r="6" fill="none" stroke="#f5b942" stroke-width="1.5"/>
+    <text x="89" y="324" text-anchor="middle" font-size="26" fill="#f5b942">&#128172;</text>
+    <text x="89" y="426" text-anchor="middle" font-size="15" fill="#e6e8eb" font-weight="600">WhatsApp User</text>
+    <text x="89" y="446" text-anchor="middle" font-size="12" fill="#8b93a1">forwards a message</text>
+  </g>
+
+  <!-- Ingestion Service -->
+  <g>
+    <rect x="300" y="234" width="260" height="150" rx="16" fill="#131a24" stroke="#f5b942" stroke-width="2"/>
+    <text x="430" y="270" text-anchor="middle" font-size="19" font-weight="700" fill="#f5b942">Ingestion Service</text>
+    <text x="430" y="292" text-anchor="middle" font-size="13" fill="#8b93a1">Cloud Run</text>
+    <line x1="322" y1="304" x2="538" y2="304" stroke="#232c39"/>
+    <text x="430" y="328" text-anchor="middle" font-size="12.5" fill="#c7ccd4">HMAC signature verify</text>
+    <text x="430" y="348" text-anchor="middle" font-size="12.5" fill="#c7ccd4">PII redaction (guardrails)</text>
+    <text x="430" y="368" text-anchor="middle" font-size="12.5" fill="#c7ccd4">user_id &#8594; one-way hash</text>
+  </g>
+
+  <!-- Pub/Sub node -->
+  <g>
+    <rect x="620" y="254" width="196" height="110" rx="14" fill="#131a24" stroke="#60a5fa" stroke-width="2"/>
+    <text x="718" y="290" text-anchor="middle" font-size="17" font-weight="700" fill="#60a5fa">Pub/Sub</text>
+    <text x="718" y="312" text-anchor="middle" font-size="12" fill="#8b93a1">topic: incoming-reports</text>
+    <text x="718" y="332" text-anchor="middle" font-size="12" fill="#8b93a1">push subscription</text>
+    <text x="718" y="352" text-anchor="middle" font-size="12" fill="#8b93a1">+ dead-letter topic</text>
+  </g>
+
+  <!-- Orchestrator -->
+  <g>
+    <rect x="876" y="200" width="340" height="212" rx="18" fill="#131a24" stroke="#2dd4bf" stroke-width="2.5"/>
+    <text x="1046" y="236" text-anchor="middle" font-size="20" font-weight="700" fill="#2dd4bf">Agent Orchestrator</text>
+    <text x="1046" y="258" text-anchor="middle" font-size="13" fill="#8b93a1">Cloud Run &#183; Google ADK reasoning loop</text>
+    <line x1="900" y1="270" x2="1192" y2="270" stroke="#232c39"/>
+
+    <rect x="900" y="282" width="292" height="36" rx="8" fill="#0a0e14" stroke="#2dd4bf" stroke-opacity="0.6" stroke-width="1.5"/>
+    <text x="1046" y="305" text-anchor="middle" font-size="13" fill="#8fe9dd" font-weight="600">Gemini &#8226; Vertex AI</text>
+
+    <g font-size="10.5" fill="#c7ccd4">
+      <rect x="900" y="332" width="140" height="24" rx="12" fill="#0a0e14" stroke="#33404f"/>
+      <text x="970" y="348" text-anchor="middle">analyze_content</text>
+
+      <rect x="1052" y="332" width="140" height="24" rx="12" fill="#0a0e14" stroke="#33404f"/>
+      <text x="1122" y="348" text-anchor="middle">check_sender_rep</text>
+
+      <rect x="900" y="362" width="140" height="24" rx="12" fill="#0a0e14" stroke="#33404f"/>
+      <text x="970" y="378" text-anchor="middle">cross_reference</text>
+
+      <rect x="1052" y="362" width="140" height="24" rx="12" fill="#0a0e14" stroke="#33404f"/>
+      <text x="1122" y="378" text-anchor="middle">draft_protective_action</text>
+    </g>
+  </g>
+
+  <!-- Firestore -->
+  <g>
+    <rect x="1280" y="234" width="280" height="150" rx="16" fill="#131a24" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1420" y="270" text-anchor="middle" font-size="19" font-weight="700" fill="#60a5fa">Firestore</text>
+    <line x1="1302" y1="284" x2="1538" y2="284" stroke="#232c39"/>
+    <text x="1420" y="306" text-anchor="middle" font-size="12.5" fill="#c7ccd4">user_reports &#183; reasoning_trace</text>
+    <text x="1420" y="326" text-anchor="middle" font-size="12.5" fill="#c7ccd4">global_patterns (shared signal)</text>
+    <text x="1420" y="346" text-anchor="middle" font-size="12.5" fill="#c7ccd4">user_directory &#8212; KMS-encrypted</text>
+    <text x="1420" y="366" text-anchor="middle" font-size="12.5" fill="#c7ccd4">follow_ups &#183; family_links</text>
+  </g>
+
+  <!-- main pipeline arrows -->
+  <line x1="132" y1="316" x2="296" y2="316" stroke="#f5b942" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <text x="214" y="304" text-anchor="middle" font-size="11" fill="#8b93a1">sends suspicious message</text>
+
+  <line x1="560" y1="309" x2="616" y2="309" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-sky)"/>
+  <text x="588" y="297" text-anchor="middle" font-size="10.5" fill="#8b93a1">publish</text>
+
+  <line x1="816" y1="309" x2="872" y2="309" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrow-teal)"/>
+  <text x="844" y="297" text-anchor="middle" font-size="10.5" fill="#8b93a1">push</text>
+
+  <line x1="1216" y1="309" x2="1276" y2="309" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-sky)"/>
+  <text x="1246" y="297" text-anchor="middle" font-size="10.5" fill="#8b93a1">persist</text>
+
+  <!-- reply loop back to phone -->
+  <path d="M 1046 414 C 1046 478, 400 478, 89 406" fill="none" stroke="#f5b942" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <text x="560" y="494" text-anchor="middle" font-size="12" fill="#c7ccd4">plain-language verdict + report draft, sent back on WhatsApp</text>
+
+  <!-- async follow-up row -->
+  <g>
+    <rect x="876" y="536" width="200" height="110" rx="14" fill="#131a24" stroke="#60a5fa" stroke-width="2"/>
+    <text x="976" y="574" text-anchor="middle" font-size="16" font-weight="700" fill="#60a5fa">Cloud Scheduler</text>
+    <text x="976" y="596" text-anchor="middle" font-size="12" fill="#8b93a1">periodic tick</text>
+    <text x="976" y="616" text-anchor="middle" font-size="12" fill="#8b93a1">OIDC-signed trigger</text>
+  </g>
+
+  <g>
+    <rect x="1116" y="536" width="240" height="110" rx="14" fill="#131a24" stroke="#f5b942" stroke-width="2"/>
+    <text x="1236" y="574" text-anchor="middle" font-size="16" font-weight="700" fill="#f5b942">Follow-up Worker</text>
+    <text x="1236" y="596" text-anchor="middle" font-size="12" fill="#8b93a1">Cloud Run Job</text>
+    <text x="1236" y="616" text-anchor="middle" font-size="12" fill="#8b93a1">re-engages hours later</text>
+  </g>
+
+  <line x1="1076" y1="591" x2="1112" y2="591" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow-sky)"/>
+
+  <path d="M 1300 442 C 1360 470, 1400 500, 1236 532" fill="none" stroke="#5b6472" stroke-width="1.5" stroke-dasharray="4 5" marker-end="url(#arrow-muted)"/>
+  <text x="1400" y="466" text-anchor="middle" font-size="11" fill="#7a8290">due follow_ups</text>
+  <text x="1400" y="482" text-anchor="middle" font-size="11" fill="#7a8290">(not_before &#8804; now)</text>
+
+  <path d="M 1116 610 C 500 700, 200 660, 100 410" fill="none" stroke="#f5b942" stroke-width="1.75" stroke-dasharray="5 6" marker-end="url(#arrow-amber)"/>
+  <text x="600" y="700" text-anchor="middle" font-size="12" fill="#c7ccd4">hours later: "are you safe now?" check-in &#8212; entirely async, no request waiting</text>
+
+  <!-- caption -->
+  <text x="800" y="778" text-anchor="middle" font-size="14" fill="#5b6472">Every node here is a deployed Cloud Run service, Pub/Sub topic, or Firestore collection &#8212; verified end-to-end against real GCP infrastructure.</text>
+</svg>
