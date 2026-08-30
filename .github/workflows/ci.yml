@@ -32,8 +32,10 @@ jobs:
 
       - name: Agent-orchestrator + followup-worker dependencies
         run: |
-          pip install -r services/agent-orchestrator/requirements.txt
-          pip install -r services/followup-worker/requirements.txt
+          cd services/agent-orchestrator
+          pip install -r requirements.txt
+          cd ../followup-worker
+          pip install -r requirements.txt
 
       # Real Firestore, not mocks -- this is what caught the
       # mode="json"-breaks-range-queries bug during development. See
