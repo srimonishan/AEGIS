@@ -81,17 +81,6 @@ The orchestrator isn't a single prompt-and-response call — it's a genuine mult
 
 <img src="docs/screenshots/gcp-logs-webhook-message-sent.png" alt="Google Cloud Logs Explorer showing AEGIS webhook requests, Pub/Sub report publishing, model responses, and WhatsApp message delivery" width="100%">
 
-## WhatsApp Business Profile
-
-| Field | Value |
-|---|---|
-| Display name | `AEGIS Scam Guard` |
-| Phone number | `+94 76 446 0037` |
-| About | `Forward suspicious messages to check scam risk.` |
-| Description | `AEGIS Scam Guard helps people check suspicious WhatsApp messages, links, images, and voice notes for scam risk using AI. Created by Srimonishan.` |
-| Website | `https://srimonishan.com/` |
-| Category | `Professional Services` |
-
 ## Security & Privacy, By Design
 
 - **Guardrail pipeline** — every piece of forwarded content is PII-redacted and injection-checked *before* it ever reaches a model, wrapped in an untrusted-content boundary the model is instructed to never treat as instructions
