@@ -69,3 +69,17 @@ def test_processing_exception_returns_500_for_retry():
     with patch.object(main, "_process_report", new=AsyncMock(side_effect=RuntimeError("boom"))):
         r = client.post("/pubsub/push", json=_envelope(REPORT))
         assert r.status_code == 500
+
+
+def test_quota_exhaustion_sends_user_visible_fallback_and_acks():
+    with patch.object(
+        main,
+        "_process_report",
+        new=AsyncMock(side_effect=RuntimeError("429 RESOURCE_EXHAUSTED")),
+    ), patch("whatsapp_sender.send_whatsapp_text", return_value=True) as mock_send:
+        r = client.post("/pubsub/push", json=_envelope(REPORT))
+
+    assert r.status_code == 200
+    mock_send.assert_called_once()
+    assert mock_send.call_args[0][0] == "hashed-abc"
+    assert "temporarily rate-limited" in mock_send.call_args[0][1]

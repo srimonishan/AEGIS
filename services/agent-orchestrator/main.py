@@ -24,6 +24,7 @@ from google.genai import types
 import contact_directory
 import data_deletion_commands
 import family_link_commands
+import whatsapp_sender
 from aegis_agent import build_agent
 from guardrails import GuardrailPipeline
 from pubsub_auth import verify_push_request
@@ -70,11 +71,24 @@ async def pubsub_push(request: Request):
 
     try:
         await _process_report(report)
-    except Exception:
+    except Exception as exc:
+        if _is_quota_exhausted(exc):
+            logger.exception("report_processing_quota_exhausted", extra={"report_id": report.report_id})
+            whatsapp_sender.send_whatsapp_text(
+                report.user_id,
+                "I received your message, but AEGIS is temporarily rate-limited while analyzing it. "
+                "Please try again in a few minutes.",
+            )
+            return Response(status_code=200)
         logger.exception("report_processing_failed", extra={"report_id": report.report_id})
         return Response(status_code=500)  # transient failure -- let Pub/Sub retry
 
     return Response(status_code=200)
+
+
+def _is_quota_exhausted(exc: Exception) -> bool:
+    text = f"{type(exc).__name__}: {exc}"
+    return "RESOURCE_EXHAUSTED" in text or "429" in text
 
 
 async def _process_report(report: IncomingReport) -> None:

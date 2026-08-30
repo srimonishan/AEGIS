@@ -47,6 +47,7 @@ def send_whatsapp_text(user_id: str, body: str) -> bool:
         if resp.status_code >= 300:
             logger.error("whatsapp_send_failed", extra={"status": resp.status_code, "user_id": user_id})
             return False
+        logger.info("whatsapp_send_success", extra={"user_id": user_id})
         return True
     except httpx.HTTPError:
         logger.exception("whatsapp_send_exception", extra={"user_id": user_id})
