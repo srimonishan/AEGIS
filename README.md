@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/aegis-whatsapp-profile-logo.png" alt="AEGIS Scam Guard logo" width="160">
+
 # AEGIS
 
 ### The AI agent that stands between you and the scam.
@@ -78,6 +80,17 @@ The orchestrator isn't a single prompt-and-response call — it's a genuine mult
 **A real scam message, caught and explained over WhatsApp:**
 
 <img src="docs/screenshots/whatsapp-demo.png" alt="WhatsApp conversation showing AEGIS correctly identifying a phishing message and explaining why" width="45%">
+
+## WhatsApp Business Profile
+
+| Field | Value |
+|---|---|
+| Display name | `AEGIS Scam Guard` |
+| Phone number | `+94 76 446 0037` |
+| About | `Forward suspicious messages to check scam risk.` |
+| Description | `AEGIS Scam Guard helps people check suspicious WhatsApp messages, links, images, and voice notes for scam risk using AI. Created by Srimonishan.` |
+| Website | `https://srimonishan.com/` |
+| Category | `Professional Services` |
 
 ## Security & Privacy, By Design
 
