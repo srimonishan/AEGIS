@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/aegis-whatsapp-profile-logo.png" alt="AEGIS Scam Guard logo" width="160">
+<img src="docs/assets/aegis-whatsapp-profile-logo-corporate.png" alt="AEGIS Scam Guard logo" width="160">
 
 # AEGIS
 
