@@ -12,8 +12,9 @@ Collections:
   pending_deletions/{userId}      -> PendingDeletionDoc
 
 Every service that reads/writes Firestore MUST go through
-`.model_dump(mode="json")` / `.model_validate()` on these models -- never
-hand-build a dict for `doc_ref.set(...)`.
+`.model_dump(mode="python")` / `.model_validate()` on these models --
+never hand-build a dict for `doc_ref.set(...)`. Python mode matters:
+Firestore range queries need native datetimes, not JSON strings.
 """
 
 from __future__ import annotations

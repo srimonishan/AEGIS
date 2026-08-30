@@ -6,6 +6,8 @@
 
 **A WhatsApp-native autonomous agent that reads a suspicious message the instant it arrives, reasons about it with Gemini, checks it against a shared threat memory, and replies in plain language — then quietly checks back on you hours later.**
 
+**Live WhatsApp bot:** [+94 76 446 0037](https://wa.me/94764460037)
+
 ![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logoColor=white)
 ![Vertex AI](https://img.shields.io/badge/Vertex_AI-34A853?style=for-the-badge&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logoColor=white)
@@ -124,5 +126,7 @@ Every claim in this document — every test, every real deployment run, every bu
 <div align="center">
 
 **Built to be run, not just read.**
+
+Created by Srimonishan
 
 </div>

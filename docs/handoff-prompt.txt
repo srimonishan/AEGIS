@@ -1,270 +1,358 @@
-# AEGIS — Project Handoff / Continuation Prompt
+# AEGIS - Project Handoff / Continuation Prompt
 
-You are picking up an existing, partially-hardened project called AEGIS.
-Read this whole prompt before touching anything, then verify the current
-state yourself using the commands in "Step 0" before making changes —
-don't trust this summary blindly, confirm it.
+Last updated: 2026-08-30.
 
-## Repo location
+You are picking up an existing project called AEGIS. Read this whole
+prompt, then read `README.md`, `docs/ENGINEERING.md`, and
+`docs/prompt-injection-test-log.md` before changing code. Verify the
+current state yourself before relying on this summary.
 
+## Repo location and status
+
+Project root:
+
+```text
 /run/media/monishan/hdd/Google hackthon project/aegis/
+```
 
-Not a git repo yet (no git init has been run — ask before initializing one).
+This directory is a git repo. There is also a parent workspace git repo,
+but treat `aegis/` as the project repo unless the user explicitly asks
+otherwise.
+
+Current observed state on 2026-08-30:
+
+```bash
+cd "/run/media/monishan/hdd/Google hackthon project/aegis"
+git status --short
+git log -5 --oneline --decorate
+```
+
+Observed branch/history:
+
+```text
+0d8a020 (HEAD -> Master, origin/Master) Refactor code structure for improved readability and maintainability
+302d7d3 Refactor code structure for improved readability and maintainability
+c5261a4 fix: Prevent overwriting fields in Firestore during partial updates by using exclude_unset=True
+d5340d5 feat: Implement ingestion service with Pub/Sub integration and webhook signature verification
+fd266ca first commit
+```
+
+`git status --short` showed an existing local modification to this prompt
+before the 2026-08-30 pass. Treat local uncommitted changes as user/work
+state unless you created them in the current task.
 
 ## What AEGIS is
 
-A WhatsApp-native autonomous agent for Google's "All Things Agentic
-Hackathon" (Taskmaster track): it investigates forwarded scam
-messages/images/audio, verifies them against a shared anonymized threat
-database, and takes protective action (plain-language reply, report
-draft, opt-in family notification) — with real asynchronous re-engagement
-hours later, not just a chat loop.
+AEGIS is a WhatsApp-native autonomous scam-protection agent for Google's
+"All Things Agentic Hackathon" Taskmaster track. It receives forwarded
+messages/images/audio, runs them through guardrails, analyzes them with a
+Gemini-backed Google ADK agent, cross-checks shared anonymized threat
+memory, replies in plain language, drafts a report, optionally notifies a
+family contact, and schedules asynchronous follow-up checks.
 
-Hard requirements it must satisfy: Gemini (3.5+) via Vertex AI, Google
-ADK for agent orchestration, at least one GCP infra service (uses Cloud
-Run, Pub/Sub, Firestore, KMS, Cloud Scheduler, Secret Manager), real
-background async processing, a working deploy + architecture diagram.
+Hackathon requirements this project is designed to satisfy:
+
+- Gemini via Vertex AI in the production configuration.
+- Google ADK for agent orchestration.
+- Real GCP infrastructure, not a local-only demo: Cloud Run, Pub/Sub,
+  Firestore, Cloud KMS, Cloud Scheduler, Secret Manager, Terraform.
+- Background async work via Cloud Scheduler + Cloud Run Job + Firestore
+  due-records.
+- Architecture diagram, dashboard, and deploy instructions.
 
 ## Stack
 
-Python 3.12 / FastAPI services + google-adk==2.7.1 + Gemini via Vertex AI
-+ Firestore + Pub/Sub + Cloud KMS + Cloud Run/Jobs/Scheduler + Secret
-Manager, Terraform IaC (hashicorp/google ~> 6.0), React/Vite/Tailwind
-dashboard with Firebase Auth, GitHub Actions CI.
+- Python services: FastAPI, Pydantic shared schemas, `google-adk==2.7.1`.
+- AI: Gemini through ADK; production env is Vertex AI
+  (`GOOGLE_GENAI_USE_VERTEXAI=true`), while some live development runs
+  used the Gemini Developer API with `GOOGLE_API_KEY`.
+- Data and infra: Pub/Sub, Firestore, KMS, Secret Manager, Cloud Run,
+  Cloud Run Jobs, Cloud Scheduler, Terraform provider `hashicorp/google`.
+- WhatsApp Graph API version: configured by Terraform through
+  `meta_graph_api_version`, defaulting to `v25.0`.
+- Dashboard: React + Vite + Tailwind + Firebase Auth.
+- CI: `.github/workflows/ci.yml`.
 
 ## Repo layout
 
-  services/ingestion/            Cloud Run — WhatsApp webhook receiver
-  services/agent-orchestrator/   Cloud Run — ADK agent + 5 tools + 2 command modules
-  services/followup-worker/      Cloud Run Job — scheduled async re-engagement
-  shared/schemas/                Pydantic contracts for every event/Firestore doc
-  shared/guardrails/             PII redaction + prompt-injection detection
-  dashboard/                     React ops console
-  infra/terraform/               All infra (see below)
-  infra/firestore.rules
-  docs/prompt-injection-test-log.md
-  .github/workflows/ci.yml
-  README.md                      <- READ THIS FIRST, it's the full source of truth
+```text
+services/ingestion/            Cloud Run webhook receiver
+services/agent-orchestrator/   ADK agent, 5 tools, family/data commands
+services/followup-worker/      Cloud Run Job for async re-engagement
+shared/schemas/                Typed Pub/Sub and Firestore contracts
+shared/guardrails/             PII redaction and injection defense
+dashboard/                     Ops dashboard
+infra/terraform/               GCP infrastructure
+infra/firestore.rules          dashboard read rules
+docs/                          engineering record, prompt-injection log, assets
+README.md                      public project explanation and source of truth
+```
 
-## Step 0: verify the baseline before changing anything
+Avoid treating checked-in `.venv`, `node_modules`, `.terraform`,
+`__pycache__`, `.pytest_cache`, and generated package metadata as source
+of truth. They are present in the workspace and can make broad `find` or
+`grep -R` output noisy.
 
-  # Python tests (54 should pass; 3+2 of them need a Firestore emulator,
-  # see "how to run the emulator" below, otherwise they self-skip)
-  cd shared && python -m pytest guardrails/tests -q
-  cd services/ingestion && python -m pytest tests -q
-  cd services/agent-orchestrator && python -m pytest tests -q
-  cd services/followup-worker && python -m pytest tests -q
+## Step 0: verify baseline before changes
 
-  # Terraform (a `terraform` binary may not be pre-installed — download
-  # one, e.g. terraform 1.9.8, if `terraform` isn't found)
-  cd infra/terraform
-  cp backend.tf backend.tf.orig
-  awk '/^terraform {/{skip=1} skip&&/^}/{skip=0;next} !skip' backend.tf.orig > backend.tf
-  terraform init -backend=false && terraform validate && terraform fmt -check -recursive
-  mv backend.tf.orig backend.tf
+Use the repo's CI command shape, because service tests depend on the
+editable shared package and service requirements.
 
-  # Docker builds (from repo root, context matters)
-  docker build -f services/ingestion/Dockerfile -t aegis-ingestion:check .
-  docker build -f services/agent-orchestrator/Dockerfile -t aegis-orchestrator:check .
-  docker build -f services/followup-worker/Dockerfile -t aegis-followup-worker:check .
+```bash
+cd "/run/media/monishan/hdd/Google hackthon project/aegis"
 
-  # Dashboard
-  cd dashboard && npm install && VITE_FIREBASE_API_KEY=x VITE_FIREBASE_AUTH_DOMAIN=x.firebaseapp.com VITE_FIREBASE_PROJECT_ID=x npm run build
+python -m pip install -e ./shared pytest
 
-How to run the Firestore emulator for the integration tests:
-  docker run -d --rm --name firestore-emu -p 8090:8080 \
-    gcr.io/google.com/cloudsdktool/cloud-sdk:emulators \
-    gcloud emulators firestore start --host-port=0.0.0.0:8080 --database-mode=firestore-native
-  # then export FIRESTORE_EMULATOR_HOST=localhost:8090 before running the
-  # agent-orchestrator / followup-worker test suites
+cd shared
+AEGIS_USER_ID_PEPPER=ci-pepper python -m pytest guardrails/tests -q
 
-If any of the above doesn't match what's described here, trust what you
-just ran, not this document — something changed since this was written.
+cd ../services/ingestion
+python -m pip install -r requirements.txt
+python -m pytest tests -q
 
-## What's already built and verified (don't redo, don't second-guess without re-testing)
+cd ../agent-orchestrator
+python -m pip install -r requirements.txt
+python -m pytest tests -q
 
-- Stage 1-3: shared schemas (Pydantic, every Firestore doc + Pub/Sub event
-  typed) + guardrail pipeline (PII redaction + prompt-injection detection,
-  wraps untrusted content in <untrusted_forwarded_content> before any
-  model call). 7 tests.
-- Stage 2: ingestion service — Meta webhook signature verification,
-  payload normalization, media resolution to GCS, publish to Pub/Sub.
-  11 tests, real docker build+run verified.
-- Stage 4: agent-orchestrator — one ADK Agent (Gemini via Vertex AI), 5
-  tools (analyze_content, check_sender_reputation,
-  cross_reference_reports, draft_protective_action, escalate_or_close),
-  guardrail callbacks on every model/tool call (before_model_callback
-  re-redacts PII on every LLM turn, before/after_tool_callback log a
-  redacted reasoning trace). PLUS two deterministic (non-LLM) command
-  modules that run BEFORE guardrails/agent:
-    - family_link_commands.py: LINK FAMILY <phone> / CONFIRM LINK <code>
-      / DECLINE LINK <code> / STOP FAMILY ALERTS — two-sided consent
-      handshake for family notifications.
-    - data_deletion_commands.py: DELETE MY DATA / DELETE MY DATA CONFIRM
-      — purges every collection keyed to a user except global_patterns.
-  These are deliberately NOT ADK tools — an LLM reasoning over
-  adversarial forwarded content must never be able to trigger them via
-  embedded text. Read the module docstrings for the full reasoning
-  before "simplifying" this by making them agent tools.
-  28 tests (incl. 3 against a real Firestore emulator and 2 that force
-  real INFO-level logging — see "bugs already fixed" below for why that
-  matters), real docker build+run verified, AND actually run live
-  end-to-end against a real Gemini API key (see "live run" section below).
-- Stage 5: Firestore schema — user_reports, global_patterns,
-  family_links, pending_family_links, pending_deletions, user_history,
-  user_directory (KMS-encrypted contact, see below), follow_ups.
-- Stage 6: followup-worker — Cloud Run Job, woken by Cloud Scheduler
-  every 30 min, queries Firestore `follow_ups` where
-  status=pending AND not_before<=now, escalates/reschedules/closes. 7
-  tests (incl. 2 against emulator), real docker build+run verified.
-- Stage 7: dashboard — React/Vite/Tailwind/Firebase Auth, live case feed,
-  pattern map, per-case reasoning-trace drilldown. Builds clean.
-- Stage 8: infra — Terraform for Pub/Sub, Firestore, KMS, Secret Manager,
-  least-privilege IAM per service, Cloud Run x3 + Job + Scheduler,
-  Cloud Monitoring alerts (DLQ backlog, 5xx rates, job failures), a
-  3-threshold billing budget, remote GCS state backend, GitHub Actions
-  CI. `terraform validate`/`fmt` clean against the real provider schema.
+cd ../followup-worker
+python -m pip install -r requirements.txt
+python -m pytest tests -q
 
-## Two important architectural decisions to preserve
+cd ../../dashboard
+npm ci
+VITE_FIREBASE_API_KEY=x \
+VITE_FIREBASE_AUTH_DOMAIN=x.firebaseapp.com \
+VITE_FIREBASE_PROJECT_ID=x \
+npm run build
+```
 
-1. Contact directory (why a "hash everything" system can still reply on
-   WhatsApp): user_id = HMAC-SHA256(wa_id, AEGIS_USER_ID_PEPPER)
-   everywhere (Firestore keys, logs, reasoning trace) — one-way, by
-   design. But AEGIS has to message people, so the raw wa_id rides one
-   hop (ingestion -> orchestrator, never logged) and gets KMS-encrypted
-   into user_directory/{user_id}.encrypted_wa_id. Decrypted in exactly
-   one place, whatsapp_sender.py, right before the Graph API call —
-   never inside a tool function (would leak into the logged reasoning
-   trace). See README "Contact-directory design".
+Firestore emulator-backed tests self-skip without
+`FIRESTORE_EMULATOR_HOST`. To run the real integration tests:
 
-2. Async follow-ups are Firestore-backed, not just Pub/Sub, because
-   Pub/Sub can't delay delivery. escalate_or_close("monitor") writes a
-   `follow_ups` doc with `not_before`; the Cloud Scheduler-triggered Job
-   queries for due ones. This is what makes "runs asynchronously in the
-   background" literally true.
+```bash
+docker run -d --rm --name firestore-emu -p 8090:8080 \
+  gcr.io/google.com/cloudsdktool/cloud-sdk:emulators \
+  gcloud emulators firestore start --host-port=0.0.0.0:8080 --database-mode=firestore-native
 
-## Bugs already found and fixed — do not reintroduce these
+export FIRESTORE_EMULATOR_HOST=localhost:8090
+```
 
-- Every Firestore write MUST use `.model_dump(mode="python")`, never
-  `mode="json"`. json-mode serializes datetimes to ISO strings, and
-  Firestore silently excludes a string field from a `<=` range query
-  against a datetime value — this broke `due_follow_ups()` completely
-  (found via a real Firestore emulator, not a mock).
-- The orchestrator's Cloud Run env + Secret Manager IAM must include
-  AEGIS_USER_ID_PEPPER (family_link_commands.py needs it to hash a
-  phone number the same way ingestion does) — this was missing and
-  would have crashed the first LINK FAMILY command in production.
-- Pub/Sub's and Cloud Scheduler's own service agents need
-  `roles/iam.serviceAccountTokenCreator` granted on the pubsub_invoker /
-  scheduler_invoker service accounts respectively (see iam.tf) — without
-  it, `terraform apply` succeeds but the push subscription / scheduled
-  job silently fail to authenticate forever afterward, with no error
-  pointing at why.
-- `google_billing_budget.budget_filter.projects` wants
-  `projects/{numeric project NUMBER}`, not the project ID string — use
-  `data.google_project.current.number`.
-- Any new Firestore query needs a genuine Firestore-emulator test if it
-  uses a range/inequality filter — mocked unit tests will not catch a
-  serialization mismatch like the one above. Pattern already established
-  in services/*/tests/test_firestore_integration.py.
-- Never pass a key named `args` (or `msg`, `message`, `asctime`, or any
-  other reserved LogRecord attribute) in a `logger.X(..., extra={...})`
-  call — it raises `KeyError` at log time, but ONLY once logging is
-  actually enabled at INFO+ (pytest's root logger defaults to WARNING,
-  so this is invisible under the normal test suite). Found via
-  `_before_tool_callback`'s `extra={"args": ...}` — fixed to
-  `"tool_args"`. Regression test:
-  services/agent-orchestrator/tests/test_agent_callbacks_logging.py,
-  which explicitly forces INFO via `caplog.at_level` — copy that pattern
-  for any other logger.info/warning/error extra= dict you add.
+Terraform validation without a real backend:
 
-## A live end-to-end run has now actually happened (not just unit tests)
+```bash
+cd infra/terraform
+cp backend.tf backend.tf.orig
+awk '/^terraform {/{skip=1} skip&&/^}/{skip=0;next} !skip' backend.tf.orig > backend.tf
+terraform init -backend=false
+terraform validate
+mv backend.tf.orig backend.tf
+terraform fmt -check -recursive
+```
 
-A real Firestore emulator + real Pub/Sub emulator + the real ingestion
-and agent-orchestrator Docker images were wired together on a docker
-network, a correctly-signed synthetic WhatsApp webhook was sent through
-real ingestion, relayed through Pub/Sub (emulator doesn't support push
-delivery, so a pull-then-POST relay script stood in for that one hop),
-and with a user-supplied real Gemini API key, the orchestrator made 21
-real authenticated calls to Gemini (`backend: GoogleLLMVariant.GEMINI_API`
-in the logs -- direct Gemini Developer API via `GOOGLE_API_KEY`, not
-Vertex AI). This is what surfaced the reserved-LogRecord-key bug above.
+Docker builds from the repo root:
 
-The full multi-turn tool-calling loop didn't complete end-to-end in that
-first session -- purely a free-tier API-key quota problem (gemini-3.5-flash's
-20-requests/day cap, then gemini-3.1-flash-lite's 15-requests/minute cap,
-both exhausted by testing), not a code problem.
+```bash
+docker build -f services/ingestion/Dockerfile -t aegis-ingestion:check .
+docker build -f services/agent-orchestrator/Dockerfile -t aegis-orchestrator:check .
+docker build -f services/followup-worker/Dockerfile -t aegis-followup-worker:check .
+```
 
-## The next day, the full loop completed -- and found one more real bug
+## Local verification observed on 2026-08-30
 
-Same demo, same key, next day: the full 6-call chain (analyze_content ->
-check_sender_reputation x2 -> cross_reference_reports x2 ->
-draft_protective_action -> escalate_or_close -> finish_task) completed
-with a 200. The model correctly classified the test message (verdict:
-scam, confidence 1.0, patterns urgency + credential_phishing) and wrote a
-genuinely good plain-language explanation + report draft -- but the
-Firestore doc read back with verdict: None and only a 4-step reasoning
-trace, not the full run.
+Commands actually run in this workspace while updating this prompt:
 
-Bug: `escalate_or_close`'s write only means to set
-{report_id, user_id, status}, but `upsert_user_report` dumped the WHOLE
-UserReportDoc (every other field at its Python default: None, []), and
-Firestore's merge=True still overwrites a field if it's PRESENT in the
-payload regardless of whether it's a real value or just a default --
-so each partial status update silently nulled out the verdict/
-confidence/reasoning_trace a PREVIOUS call (draft_protective_action) had
-just written. Exactly the kind of bug that only shows up when multiple
-partial writes to the same doc happen in sequence -- unit-testing each
-Firestore function in isolation never catches it.
+```text
+shared:      python -m pytest guardrails/tests -q
+             7 passed in 0.16s
 
-Fixed: `model_dump(mode="python", exclude_unset=True)` in both
-agent-orchestrator's `upsert_user_report` and followup-worker's
-`upsert_user_report_status` -- a partial update now only touches fields
-its caller explicitly set. Confirmed by reverting the fix and watching
-`test_later_partial_upsert_does_not_clobber_earlier_verdict_and_trace`
-fail with the exact real symptom, then reapplying and re-running the
-whole live demo: final Firestore state now shows the correct verdict,
-both drafts, and the complete 17-step reasoning trace intact.
+syntax:      python -m py_compile services/ingestion/config.py \
+               services/agent-orchestrator/config.py \
+               services/followup-worker/config.py \
+               shared/schemas/firestore_models.py
+             passed
 
-**Do not remove `exclude_unset=True` from either of those two functions.**
-If you add a new partial-update call site against `user_reports`, make
-sure the `UserReportDoc(...)` you construct only explicitly passes the
-fields you actually mean to change -- anything else falls back to
-`exclude_unset` correctly leaving it alone, but only if you don't
-explicitly pass it as `None`/default on purpose.
+diff check:  git diff --check
+             passed
+```
 
-## What's NOT done yet (real gaps, prioritize based on what's asked)
+Previous local verification from 2026-08-27:
 
-1. Actual `terraform apply` against a real GCP project has never been
-   run (no gcloud/real credentials were available where this was built)
-   — validate/fmt/plan-to-the-credentials-boundary are as far as it's
-   been verified. This is the single biggest next step.
-2. Real Gemini calls now DO work AND the full 6-call tool-loop has
-   completed successfully at least once (see "the next day" section
-   above) -- correct verdict, both drafts, full reasoning trace, all
-   confirmed in Firestore. What's NOT yet exercised: the "monitor" path
-   (escalate_or_close deciding to reschedule rather than close) under a
-   real model, family notification actually sending via WhatsApp (no
-   real Meta credentials in this environment), and repeated/concurrent
-   runs to check for rate-limit or state-race issues at higher volume.
-3. No real Meta WhatsApp webhook has ever delivered a message.
-4. Cloud Armor + an external HTTPS load balancer for real rate limiting
-   on ingestion — currently only a blunt `max_instance_count` cap exists.
-5. Privacy policy / ToS page (Meta requires one for app review).
-6. WhatsApp Business app review itself (needed before messaging more
-   than 5 test numbers) — not code, a form submitted to Meta.
-7. `terraform.tfvars` and the 5 Secret Manager secret values still need
-   to be filled in with real values by whoever deploys (see README
-   "Spin-up" steps 1 and 3 — secrets are added out-of-band via `gcloud
-   secrets versions add`, deliberately never in a variable/tfvars file).
+```text
+dashboard:   npm run build
+             build succeeded; Vite warned that one chunk is >500 kB
 
-## How to proceed
+followup:    services/followup-worker/.venv/bin/python -m pytest tests -q
+             5 passed, 2 skipped in 11.02s
+```
 
-Read README.md in full first — it has exact spin-up commands, the full
-environment-variable reference, the guardrail design writeup, and the
-family-link/data-deletion command tables. Then ask the user what to work
-on next rather than assuming; the natural next steps are either (a)
-walking through a real `terraform apply` against their GCP project, or
-(b) one of the "not done yet" items above. Don't re-architect the two
-preserved design decisions above without discussing it with the user
-first — they were deliberate, not accidental.
+System Python service tests on 2026-08-27 were not a meaningful baseline
+because the ambient Python environment lacked the installed shared package
+and Google dependencies:
+
+```text
+services/ingestion: ModuleNotFoundError: No module named 'schemas'
+services/followup-worker: ModuleNotFoundError: No module named 'google.cloud'
+```
+
+Retried through checked-in service virtualenvs:
+
+```text
+services/followup-worker/.venv passed as above.
+services/ingestion/.venv and services/agent-orchestrator/.venv were quiet
+for several minutes and were interrupted locally. Do not infer a product
+regression from this alone; rerun with the CI setup or inspect hanging
+tests directly if service behavior is part of your task.
+```
+
+## What is built
+
+- Shared Pydantic schemas for Pub/Sub events and Firestore documents.
+- Guardrail pipeline: PII redaction, injection heuristics, prompt wrapper
+  with `<untrusted_forwarded_content>`.
+- Ingestion service: Meta webhook verification, payload normalization,
+  media handling, Pub/Sub publishing.
+- Agent orchestrator: ADK agent with five tools:
+  `analyze_content`, `check_sender_reputation`,
+  `cross_reference_reports`, `draft_protective_action`,
+  `escalate_or_close`.
+- Deterministic command handlers before any model call:
+  `family_link_commands.py` and `data_deletion_commands.py`.
+- Contact directory: raw WhatsApp ID is only kept encrypted with KMS in
+  `user_directory` and decrypted only right before WhatsApp send.
+- Follow-up worker: scheduled job queries due Firestore `follow_ups`
+  documents and escalates, reschedules, or closes.
+- Dashboard: live feed, pattern map, case drilldown, Firebase Auth gate.
+- Terraform: Pub/Sub, Firestore, KMS, Secret Manager, IAM, Cloud Run,
+  Cloud Run Job, Scheduler, monitoring alerts, budget, remote state.
+- Real-number configuration: `meta_phone_number_id` selects the sending
+  WhatsApp Business phone number, `meta_graph_api_version` pins the
+  versioned Graph API path, and `aegis-meta-access-token` must be
+  authorized for that WABA.
+- Live WhatsApp bot number: `+94 76 446 0037`
+- Live Meta `phone_number_id`: `1343092188881653`
+- CI covering Python tests, dashboard build, Docker builds, Terraform
+  validation, and Firestore emulator-backed integration tests.
+
+## Architectural invariants to preserve
+
+1. Every model call must pass through guardrails. The orchestrator
+   sanitizes initial content and also uses `before_model_callback`.
+
+2. User-forwarded content is adversarial data. Do not let text inside a
+   forwarded scam message act as an instruction to the agent.
+
+3. Family-link and data-deletion commands are deliberately not ADK tools.
+   They use exact command grammars before guardrails or Gemini so a scam
+   message cannot trick the model into linking a third party or deleting
+   data.
+
+4. `user_id = HMAC-SHA256(wa_id, AEGIS_USER_ID_PEPPER)` everywhere
+   except the encrypted contact directory. Raw WhatsApp numbers must not
+   enter tool arguments, reasoning traces, logs, or dashboard documents.
+
+5. Async follow-up is Firestore-backed. Pub/Sub cannot delay delivery, so
+   `escalate_or_close(decision="monitor")` must write `follow_ups` with
+   `not_before`, and the scheduled worker must query due records.
+
+6. Firestore writes that persist datetimes must use
+   `model_dump(mode="python")`, not `mode="json"`.
+
+7. Partial updates to `user_reports` must not clobber prior fields.
+   Preserve `exclude_unset=True` in:
+   - `services/agent-orchestrator/firestore_client.py::upsert_user_report`
+   - `services/followup-worker/firestore_client.py::upsert_user_report_status`
+
+8. Do not use reserved `logging.LogRecord` keys in `extra={...}`. In
+   particular avoid `args`, `msg`, `message`, and `asctime`; use names
+   like `tool_args`.
+
+9. Any new Firestore range/inequality query needs a real Firestore
+   emulator test. Mocked tests missed the datetime serialization bug.
+
+## Bugs already found and fixed
+
+- `model_dump(mode="json")` serialized datetimes to strings, causing
+  Firestore range queries to silently miss due follow-ups. Fixed with
+  `mode="python"` and emulator tests.
+- Missing `AEGIS_USER_ID_PEPPER` in orchestrator Cloud Run config would
+  have broken `LINK FAMILY`. Fixed in Terraform.
+- Pub/Sub and Cloud Scheduler service agents needed
+  `roles/iam.serviceAccountTokenCreator` on their invoker service
+  accounts. Fixed in IAM.
+- `google_billing_budget.budget_filter.projects` needs the numeric
+  project number, not project ID. Fixed via `data.google_project.current`.
+- `logger.info(..., extra={"args": ...})` raised `KeyError` only when
+  INFO logging was enabled. Fixed to `tool_args` and covered by a
+  regression test.
+- Later partial Firestore updates nulled earlier verdict/confidence/trace
+  fields. Fixed with `exclude_unset=True` and regression-tested via a
+  real Firestore emulator.
+
+## Live run status
+
+A real local end-to-end run has happened with:
+
+- Firestore emulator.
+- Pub/Sub emulator.
+- Real ingestion Docker image.
+- Real orchestrator Docker image.
+- Correctly HMAC-signed synthetic WhatsApp-shaped webhook.
+- Pull-then-POST relay for Pub/Sub push, because the emulator does not
+  implement push delivery.
+- Real Gemini calls using a user-supplied API key.
+
+The first live session hit API-key quota limits after authenticating
+successfully. A later run completed the full tool loop and correctly
+classified the test scam with `verdict=scam`, `confidence=1.0`, urgency
+and credential-phishing patterns, plain-language explanation, report
+draft, and a full persisted reasoning trace after the partial-update bug
+was fixed.
+
+Still not live-verified:
+
+- A real Meta WhatsApp webhook delivering an actual message.
+- `terraform apply` end-to-end against a real GCP project.
+- The model choosing the `monitor` path under live Gemini conditions.
+- Family notification sending through real Meta credentials.
+- Higher-volume or concurrent live traffic.
+
+## Highest-value next work
+
+1. Run `terraform apply` against a real GCP project with real credentials
+   and fix any apply-time IAM/API/config issues.
+2. Configure a real Meta WhatsApp app webhook and verify an actual
+   message reaches ingestion.
+3. Exercise a real `monitor` decision and prove the scheduled follow-up
+   worker resumes the case later.
+4. Add Cloud Armor or an external HTTPS load balancer for real ingestion
+   rate limiting. Current `max_instance_count` is only a blunt cost cap.
+5. Add privacy policy and ToS pages required for Meta review.
+6. Complete WhatsApp Business app review before expanding beyond test
+   numbers.
+
+## Deployment notes
+
+`terraform.tfvars` is intentionally ignored. Secret values must not go in
+Terraform variables or state. Terraform creates Secret Manager containers
+and IAM; secret versions are added out-of-band:
+
+```bash
+echo -n "your-meta-app-secret"     | gcloud secrets versions add aegis-meta-app-secret --data-file=-
+echo -n "your-verify-token"        | gcloud secrets versions add aegis-meta-verify-token --data-file=-
+echo -n "your-meta-access-token"   | gcloud secrets versions add aegis-meta-access-token --data-file=-
+echo -n "$AEGIS_USER_ID_PEPPER"    | gcloud secrets versions add aegis-user-id-pepper --data-file=-
+echo -n "$GLOBAL_PATTERN_SALT"     | gcloud secrets versions add aegis-global-pattern-salt --data-file=-
+```
+
+Cloud Run reads secret versions at container start, so after adding new
+secret versions you need a new Cloud Run revision.
+
+## If you change this project
+
+- Keep edits scoped; do not refactor service boundaries casually.
+- Preserve typed schemas and avoid ad hoc Firestore dicts where a schema
+  already exists.
+- Add tests in the service that owns the behavior.
+- For Firestore query behavior, prefer emulator-backed tests.
+- Before finishing, run the narrow tests for what you changed and record
+  anything that could not be verified.

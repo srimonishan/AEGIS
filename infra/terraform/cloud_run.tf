@@ -72,6 +72,10 @@ resource "google_cloud_run_v2_service" "ingestion" {
         }
       }
       env {
+        name  = "META_GRAPH_API_VERSION"
+        value = var.meta_graph_api_version
+      }
+      env {
         name = "AEGIS_USER_ID_PEPPER"
         value_source {
           secret_key_ref {
@@ -154,6 +158,10 @@ resource "google_cloud_run_v2_service" "orchestrator" {
         value = var.meta_phone_number_id
       }
       env {
+        name  = "META_GRAPH_API_VERSION"
+        value = var.meta_graph_api_version
+      }
+      env {
         name = "GLOBAL_PATTERN_SALT"
         value_source {
           secret_key_ref {
@@ -230,6 +238,10 @@ resource "google_cloud_run_v2_job" "followup_worker" {
         env {
           name  = "META_PHONE_NUMBER_ID"
           value = var.meta_phone_number_id
+        }
+        env {
+          name  = "META_GRAPH_API_VERSION"
+          value = var.meta_graph_api_version
         }
       }
     }

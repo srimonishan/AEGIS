@@ -343,6 +343,8 @@ requires one for app review); WhatsApp Business app review itself
 - A Meta developer app with the WhatsApp Business Cloud API product
   added, a test/production phone number, and its `access_token`,
   `phone_number_id`, and `app_secret`.
+- Current live WhatsApp bot number: `+94 76 446 0037`; current live
+  `phone_number_id`: `1343092188881653`.
 - Node.js 20+ (dashboard) and Docker (building service images).
 - Your `gcloud`/Terraform identity needs `roles/billing.costsManager` (or
   broader) **on the billing account itself**, not just the project — the
@@ -455,9 +457,9 @@ dashboard) change state without any new user action — that's the
 
 | Service | Var | Notes |
 |---|---|---|
-| ingestion | `GCP_PROJECT_ID`, `MEDIA_GCS_BUCKET`, `META_APP_SECRET`ⁿ, `META_VERIFY_TOKEN`ⁿ, `META_ACCESS_TOKEN`ⁿ, `AEGIS_USER_ID_PEPPER`ⁿ | `PUBSUB_TOPIC_INCOMING_REPORTS`, `META_GRAPH_API_VERSION` optional (defaulted) |
-| agent-orchestrator | `GCP_PROJECT_ID`, `GEMINI_MODEL`, `GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `META_ACCESS_TOKEN`ⁿ, `META_PHONE_NUMBER_ID`, `GLOBAL_PATTERN_SALT`ⁿ, `CONTACT_DIRECTORY_KMS_KEY` | `VERIFY_PUBSUB_PUSH_OIDC=false` for local-only testing |
-| followup-worker | `GCP_PROJECT_ID`, `GLOBAL_PATTERN_SALT`ⁿ, `CONTACT_DIRECTORY_KMS_KEY`, `META_ACCESS_TOKEN`ⁿ, `META_PHONE_NUMBER_ID` | `MAX_FOLLOW_UP_CYCLES`, `FOLLOWUP_BATCH_SIZE` optional |
+| ingestion | `GCP_PROJECT_ID`, `MEDIA_GCS_BUCKET`, `META_APP_SECRET`ⁿ, `META_VERIFY_TOKEN`ⁿ, `META_ACCESS_TOKEN`ⁿ, `META_GRAPH_API_VERSION`, `AEGIS_USER_ID_PEPPER`ⁿ | `PUBSUB_TOPIC_INCOMING_REPORTS` optional |
+| agent-orchestrator | `GCP_PROJECT_ID`, `GEMINI_MODEL`, `GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `META_ACCESS_TOKEN`ⁿ, `META_PHONE_NUMBER_ID`, `META_GRAPH_API_VERSION`, `GLOBAL_PATTERN_SALT`ⁿ, `CONTACT_DIRECTORY_KMS_KEY` | `VERIFY_PUBSUB_PUSH_OIDC=false` for local-only testing |
+| followup-worker | `GCP_PROJECT_ID`, `GLOBAL_PATTERN_SALT`ⁿ, `CONTACT_DIRECTORY_KMS_KEY`, `META_ACCESS_TOKEN`ⁿ, `META_PHONE_NUMBER_ID`, `META_GRAPH_API_VERSION` | `MAX_FOLLOW_UP_CYCLES`, `FOLLOWUP_BATCH_SIZE` optional |
 | dashboard | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID` | public client config, not secrets |
 
 ⁿ = Secret Manager-backed in the deployed Cloud Run config (`value_source.secret_key_ref`
@@ -469,6 +471,7 @@ The five secret values themselves never appear in `.tfvars`, `terraform.tfvars.e
 or Terraform state at all — see step 3 of Spin-up and `secrets.tf`.
 
 Terraform also now needs `alert_notification_email`, `billing_account_id`,
-and (optionally) `monthly_budget_usd` — see `variables.tf` and
+`meta_graph_api_version` (default `v25.0`), and optionally
+`monthly_budget_usd` — see `variables.tf` and
 `terraform.tfvars.example`.
 # AEGIS

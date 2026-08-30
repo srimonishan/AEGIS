@@ -35,6 +35,12 @@ variable "meta_phone_number_id" {
   type        = string
 }
 
+variable "meta_graph_api_version" {
+  description = "Versioned Meta Graph API path used for WhatsApp Cloud API calls."
+  type        = string
+  default     = "v25.0"
+}
+
 variable "media_gcs_bucket_name" {
   description = "GCS bucket name for resolved WhatsApp media (must be globally unique)."
   type        = string

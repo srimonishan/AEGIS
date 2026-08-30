@@ -39,7 +39,7 @@ class Settings:
 
     @property
     def meta_graph_api_version(self) -> str:
-        return os.environ.get("META_GRAPH_API_VERSION", "v21.0")
+        return os.environ.get("META_GRAPH_API_VERSION", "v25.0")
 
 
 settings = Settings()
