@@ -22,7 +22,7 @@ provider "google" {
   # updates the local ADC file; it doesn't make the provider attach the
   # header to its API calls.
   user_project_override = true
-  billing_project        = var.project_id
+  billing_project       = var.project_id
 }
 
 locals {
