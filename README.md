@@ -71,15 +71,19 @@ The orchestrator isn't a single prompt-and-response call — it's a genuine mult
 4. **`draft_protective_action`** — writes the plain-language explanation, a ready-to-file report, and (if opted in) a family notification
 5. **`escalate_or_close`** — commits the final verdict and either closes the case or schedules an async follow-up
 
-## Live Proof
+## Production Evidence
 
-**Google Cloud, actually running this in production:**
+**Cloud Run deployment and production traffic**
 
-<img src="docs/screenshots/gcp-console.png" alt="Google Cloud Console showing AEGIS's live Cloud Run traffic and metrics" width="100%">
+<img src="docs/screenshots/gcp-console.png" alt="Google Cloud Console showing AEGIS Cloud Run services receiving production traffic" width="100%">
 
-**Webhook ingestion, agent processing, and WhatsApp delivery logs:**
+**Webhook ingestion, agent orchestration, and WhatsApp delivery**
 
 <img src="docs/screenshots/gcp-logs-webhook-message-sent.png" alt="Google Cloud Logs Explorer showing AEGIS webhook requests, Pub/Sub report publishing, model responses, and WhatsApp message delivery" width="100%">
+
+**Real WhatsApp verdict from the deployed bot**
+
+<img src="docs/screenshots/whatsapp-scam-verdict.png" alt="WhatsApp conversation showing AEGIS Scam Guard identifying a forwarded phishing message and explaining the risk in plain language" width="45%">
 
 ## Security & Privacy, By Design
 
