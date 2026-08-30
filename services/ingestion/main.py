@@ -105,7 +105,7 @@ permanently erased.</p>
 <h2>Contact</h2>
 <p>Questions about this policy can be sent to AEGIS on WhatsApp at
 +94 76 446 0037.</p>
-<p>Created by Srimonishan</p>
+<p>Created by <a href="https://srimonishan.com/">Srimonishan</a></p>
 </body></html>"""
 
 
