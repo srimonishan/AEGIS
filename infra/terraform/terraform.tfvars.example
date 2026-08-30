@@ -13,7 +13,7 @@ region     = "us-central1"
 
 gemini_model = "gemini-2.5-pro" # must be enabled in this project/region's Vertex AI
 
-meta_phone_number_id = "meta-phone-number-id"
+meta_phone_number_id    = "meta-phone-number-id"
 meta_graph_api_version = "v25.0"
 
 media_gcs_bucket_name = "your-project-id-aegis-media"
