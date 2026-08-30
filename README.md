@@ -77,6 +77,10 @@ The orchestrator isn't a single prompt-and-response call — it's a genuine mult
 
 <img src="docs/screenshots/gcp-console.png" alt="Google Cloud Console showing AEGIS's live Cloud Run traffic and metrics" width="100%">
 
+**Webhook ingestion, agent processing, and WhatsApp delivery logs:**
+
+<img src="docs/screenshots/gcp-logs-webhook-message-sent.png" alt="Google Cloud Logs Explorer showing AEGIS webhook requests, Pub/Sub report publishing, model responses, and WhatsApp message delivery" width="100%">
+
 ## WhatsApp Business Profile
 
 | Field | Value |
