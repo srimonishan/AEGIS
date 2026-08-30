@@ -18,7 +18,7 @@ variable "firestore_location" {
 variable "gemini_model" {
   description = "Gemini model id to use via Vertex AI (must be enabled in this project/region)."
   type        = string
-  default     = "gemini-2.5-pro"
+  default     = "gemini-3.5-flash"
 }
 
 # NOTE: the five secret values (meta_app_secret, meta_verify_token,

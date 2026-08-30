@@ -97,9 +97,11 @@ The orchestrator isn't a single prompt-and-response call — it's a genuine mult
 
 ## Technology Stack
 
+AEGIS Scam Guard uses **Gemini 3.5 Flash via Vertex AI** as the primary multimodal reasoning model. Gemini analyzes suspicious WhatsApp messages, links, images, and voice notes for scam indicators such as urgency, impersonation, phishing links, financial pressure, and social-engineering patterns. The model is orchestrated through **Google ADK** inside a Cloud Run agent workflow, with Pub/Sub for asynchronous processing, Firestore for memory, and Cloud KMS/Secret Manager for secure handling of user contact data.
+
 | Layer | Technology |
 |---|---|
-| AI reasoning | **Gemini**, orchestrated via **Google Agent Development Kit (ADK)**, served through **Vertex AI** |
+| AI reasoning | **Gemini 3.5 Flash**, orchestrated via **Google Agent Development Kit (ADK)**, served through **Vertex AI** |
 | Compute | **Cloud Run** (services + jobs), fully autoscaling, scale-to-zero |
 | Messaging backbone | **Cloud Pub/Sub** (topics, push subscriptions, dead-letter queue) |
 | Data | **Cloud Firestore** (typed document models, no ad hoc dicts) |

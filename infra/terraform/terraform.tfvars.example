@@ -11,7 +11,7 @@
 project_id = "your-gcp-project-id"
 region     = "us-central1"
 
-gemini_model = "gemini-2.5-pro" # must be enabled in this project/region's Vertex AI
+gemini_model = "gemini-3.5-flash" # must be enabled in this project/region's Vertex AI
 
 meta_phone_number_id    = "meta-phone-number-id"
 meta_graph_api_version = "v25.0"
