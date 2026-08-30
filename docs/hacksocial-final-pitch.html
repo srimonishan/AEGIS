@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>AEGIS Scam Guard - HackSocial 2026 Pitch</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #0b1018;
+        color: #172033;
+        font-family: Inter, Arial, Helvetica, sans-serif;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        padding: 18mm;
+        page-break-after: always;
+        background: #f7fafc;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .page:last-child {
+        page-break-after: auto;
+      }
+
+      .cover {
+        background:
+          radial-gradient(circle at 80% 12%, rgba(14, 165, 233, 0.32), transparent 34%),
+          radial-gradient(circle at 8% 90%, rgba(16, 185, 129, 0.22), transparent 36%),
+          linear-gradient(135deg, #050b12 0%, #0d1724 54%, #102131 100%);
+        color: #ffffff;
+      }
+
+      .cover-grid {
+        display: grid;
+        grid-template-columns: 1.04fr 0.96fr;
+        gap: 10mm;
+        align-items: center;
+        min-height: 218mm;
+      }
+
+      .logo {
+        width: 34mm;
+        height: 34mm;
+        object-fit: contain;
+        border-radius: 10mm;
+        margin-bottom: 11mm;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 33pt;
+        line-height: 1.02;
+        letter-spacing: -0.4pt;
+      }
+
+      h2 {
+        margin: 0 0 6mm;
+        color: #0f172a;
+        font-size: 23pt;
+        line-height: 1.12;
+        letter-spacing: -0.25pt;
+      }
+
+      h3 {
+        margin: 0 0 3mm;
+        color: #0f172a;
+        font-size: 13.5pt;
+      }
+
+      p {
+        margin: 0;
+        color: #435168;
+        font-size: 10.5pt;
+        line-height: 1.55;
+      }
+
+      .cover p {
+        color: #cbd8e6;
+        font-size: 12pt;
+      }
+
+      .eyebrow {
+        color: #10b981;
+        font-size: 9pt;
+        font-weight: 800;
+        letter-spacing: 1.8pt;
+        text-transform: uppercase;
+        margin-bottom: 5mm;
+      }
+
+      .hero-card {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 10mm;
+        padding: 8mm;
+      }
+
+      .hero-card img {
+        width: 100%;
+        border-radius: 7mm;
+        display: block;
+      }
+
+      .links {
+        margin-top: 12mm;
+        display: grid;
+        gap: 4mm;
+      }
+
+      .link-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 5mm;
+        padding: 4mm 5mm;
+        border-radius: 5mm;
+        background: rgba(255, 255, 255, 0.1);
+        color: #eaf3ff;
+        font-size: 9pt;
+      }
+
+      .link-row strong {
+        color: #ffffff;
+      }
+
+      .section-note {
+        max-width: 162mm;
+        margin-bottom: 9mm;
+        font-size: 11pt;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7mm;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5mm;
+      }
+
+      .card {
+        background: #ffffff;
+        border: 1px solid #dbe3ec;
+        border-radius: 7mm;
+        padding: 6mm;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      }
+
+      .dark-card {
+        background: #0f172a;
+        border-color: #243044;
+        color: #ffffff;
+      }
+
+      .dark-card h3,
+      .dark-card p {
+        color: #ffffff;
+      }
+
+      .muted {
+        color: #64748b;
+      }
+
+      .pill {
+        display: inline-block;
+        margin: 0 2mm 2mm 0;
+        padding: 2.2mm 3.2mm;
+        border-radius: 999px;
+        background: #e6f7ef;
+        color: #047857;
+        font-size: 8.5pt;
+        font-weight: 700;
+      }
+
+      .blue {
+        background: #e8f3ff;
+        color: #0369a1;
+      }
+
+      .amber {
+        background: #fff7df;
+        color: #b45309;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 11mm 1fr;
+        gap: 4mm;
+        margin-bottom: 5mm;
+      }
+
+      .num {
+        width: 11mm;
+        height: 11mm;
+        border-radius: 50%;
+        background: #0f172a;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 9pt;
+      }
+
+      .image {
+        width: 100%;
+        border-radius: 6mm;
+        border: 1px solid #dce5ef;
+        display: block;
+      }
+
+      .arch {
+        width: 100%;
+        border-radius: 6mm;
+        display: block;
+        border: 1px solid #d7e2ee;
+      }
+
+      .footer {
+        position: absolute;
+        left: 18mm;
+        right: 18mm;
+        bottom: 10mm;
+        display: flex;
+        justify-content: space-between;
+        color: #64748b;
+        font-size: 8.5pt;
+      }
+
+      ul {
+        margin: 3mm 0 0 0;
+        padding-left: 5mm;
+      }
+
+      li {
+        color: #435168;
+        font-size: 10pt;
+        line-height: 1.45;
+        margin-bottom: 2mm;
+      }
+
+      .metric {
+        border-left: 1.5mm solid #10b981;
+        padding-left: 4mm;
+      }
+
+      .metric strong {
+        display: block;
+        color: #0f172a;
+        font-size: 14pt;
+        margin-bottom: 1mm;
+      }
+
+      .callout {
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        border-radius: 7mm;
+        padding: 6mm;
+      }
+
+      .quote {
+        font-size: 17pt;
+        line-height: 1.28;
+        color: #0f172a;
+        font-weight: 800;
+        letter-spacing: -0.2pt;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="page cover">
+      <div class="cover-grid">
+        <div>
+          <img class="logo" src="assets/aegis-whatsapp-profile-logo-corporate.png" alt="AEGIS logo">
+          <div class="eyebrow">HackSocial 2026 | AI/ML | Social Good</div>
+          <h1>AEGIS Scam Guard</h1>
+          <p style="margin-top: 7mm; max-width: 88mm;">
+            A WhatsApp-native AI safety bot that helps people detect scam messages, phishing links,
+            suspicious images, and voice notes before they get harmed.
+          </p>
+          <div class="links">
+            <div class="link-row"><strong>Live website</strong><span>https://aegis-site-936220712653.us-central1.run.app</span></div>
+            <div class="link-row"><strong>WhatsApp bot</strong><span>https://wa.me/94764460037</span></div>
+            <div class="link-row"><strong>GitHub</strong><span>https://github.com/srimonishan/AEGIS</span></div>
+            <div class="link-row"><strong>Creator</strong><span>https://srimonishan.com</span></div>
+          </div>
+        </div>
+        <div class="hero-card">
+          <img src="assets/devpost-thumbnail.png" alt="AEGIS Scam Guard project thumbnail">
+        </div>
+      </div>
+      <div class="footer"><span>AEGIS Scam Guard</span><span>Created by Srimonishan</span></div>
+    </section>
+
+    <section class="page">
+      <div class="eyebrow">Problem and impact</div>
+      <h2>Scam messages reach people before help does.</h2>
+      <p class="section-note">
+        Digital scams increasingly arrive through everyday messaging apps. A fake bank alert, delivery notice,
+        job offer, or urgent family request can pressure someone to click, share private information, or send
+        money before they can verify the message.
+      </p>
+
+      <div class="grid-3">
+        <div class="card metric">
+          <strong>Immediate</strong>
+          <p>AEGIS responds inside WhatsApp, where suspicious messages already arrive.</p>
+        </div>
+        <div class="card metric">
+          <strong>Accessible</strong>
+          <p>Users receive plain-language explanations instead of technical security jargon.</p>
+        </div>
+        <div class="card metric">
+          <strong>Protective</strong>
+          <p>The system gives concrete next steps before a user clicks or shares sensitive data.</p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 9mm;">
+        <div class="card">
+          <h3>Who this helps</h3>
+          <ul>
+            <li>Students and families receiving suspicious links or financial messages.</li>
+            <li>Older adults and less technical users who need clear, fast guidance.</li>
+            <li>Anyone who wants a second opinion before acting on a risky message.</li>
+          </ul>
+        </div>
+        <div class="card dark-card">
+          <h3>Core insight</h3>
+          <p class="quote">The safest security tool is the one people can use in the exact moment of risk.</p>
+        </div>
+      </div>
+
+      <div class="footer"><span>AEGIS Scam Guard</span><span>Social-good AI for online safety</span></div>
+    </section>
+
+    <section class="page">
+      <div class="eyebrow">Solution</div>
+      <h2>A WhatsApp AI agent that turns suspicious content into safety guidance.</h2>
+      <p class="section-note">
+        A user forwards suspicious content to AEGIS. The platform verifies the webhook, processes the report
+        asynchronously, uses Gemini through a Google ADK agent workflow, stores privacy-safe case state, and
+        sends a plain-language risk explanation back to WhatsApp.
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="step">
+            <div class="num">1</div>
+            <div><h3>Forward suspicious content</h3><p>Text, links, images, and voice notes can be sent directly to the bot.</p></div>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <div><h3>Agent investigates</h3><p>The ADK agent analyzes manipulation patterns, phishing indicators, and known scam signals.</p></div>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <div><h3>Receive plain-language help</h3><p>The user gets a verdict, explanation, and next steps in the same WhatsApp thread.</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Agent workflow</h3>
+          <span class="pill">analyze_content</span>
+          <span class="pill blue">check_sender_reputation</span>
+          <span class="pill blue">cross_reference_reports</span>
+          <span class="pill">draft_protective_action</span>
+          <span class="pill amber">escalate_or_close</span>
+          <p style="margin-top: 5mm;">
+            This moves AEGIS beyond a basic chatbot. It receives a goal, processes events, uses tools,
+            persists memory, and can continue case handling through asynchronous follow-up.
+          </p>
+        </div>
+      </div>
+
+      <img class="image" style="margin-top: 8mm; max-height: 95mm; object-fit: contain; background: #ffffff;" src="screenshots/whatsapp-scam-verdict.png" alt="WhatsApp scam verdict screenshot">
+      <div class="footer"><span>AEGIS Scam Guard</span><span>Forward it. Understand it. Stay safe.</span></div>
+    </section>
+
+    <section class="page">
+      <div class="eyebrow">Architecture</div>
+      <h2>Production-style cloud architecture, built for real message flow.</h2>
+      <p class="section-note">
+        AEGIS is separated into small services with clear security boundaries. Ingestion does not call the
+        model directly. Agent processing is decoupled through Pub/Sub. User contact data is protected with
+        hashing, Cloud KMS, and Secret Manager.
+      </p>
+      <img class="arch" src="assets/devpost-architecture-pro.png" alt="AEGIS professional architecture diagram">
+      <div class="footer"><span>AEGIS Scam Guard</span><span>Cloud Run | Pub/Sub | Firestore | Gemini | Google ADK</span></div>
+    </section>
+
+    <section class="page">
+      <div class="eyebrow">Technical execution</div>
+      <h2>Built as a real deployed system, not only a mock demo.</h2>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Built with</h3>
+          <span class="pill">Python</span>
+          <span class="pill">FastAPI</span>
+          <span class="pill">React</span>
+          <span class="pill">Vite</span>
+          <span class="pill blue">Google Cloud Run</span>
+          <span class="pill blue">Pub/Sub</span>
+          <span class="pill blue">Firestore</span>
+          <span class="pill blue">Vertex AI</span>
+          <span class="pill blue">Google ADK</span>
+          <span class="pill amber">Cloud KMS</span>
+          <span class="pill amber">Secret Manager</span>
+          <span class="pill amber">Terraform</span>
+          <span class="pill amber">Docker</span>
+        </div>
+        <div class="card">
+          <h3>Privacy and reliability</h3>
+          <ul>
+            <li>Meta webhook signature verification before processing.</li>
+            <li>HMAC-hashed user IDs for stored records and logs.</li>
+            <li>Encrypted contact directory for WhatsApp replies.</li>
+            <li>Pub/Sub retry and dead-letter design for failures.</li>
+            <li>Fallback reply when model quota is temporarily exhausted.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 8mm;">
+        <img class="image" src="screenshots/gcp-console.png" alt="Google Cloud console proof">
+        <img class="image" src="screenshots/gcp-logs-webhook-message-sent.png" alt="Cloud Logging proof">
+      </div>
+
+      <div class="footer"><span>AEGIS Scam Guard</span><span>Verified with live Cloud Run services and logs</span></div>
+    </section>
+
+    <section class="page">
+      <div class="eyebrow">Judging summary</div>
+      <h2>Why AEGIS fits HackSocial 2026.</h2>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Social good</h3>
+          <p>AEGIS helps prevent financial harm, credential theft, and phishing by making scam detection more accessible to everyday users.</p>
+        </div>
+        <div class="card">
+          <h3>Technical execution</h3>
+          <p>The project uses a deployed event-driven system with Cloud Run, Pub/Sub, Firestore, Google ADK, Gemini, KMS, Docker, and CI.</p>
+        </div>
+        <div class="card">
+          <h3>Innovation</h3>
+          <p>Instead of asking users to leave WhatsApp, AEGIS brings AI-powered protection into the conversation where the risk appears.</p>
+        </div>
+        <div class="card">
+          <h3>User experience</h3>
+          <p>The interface is the user's existing WhatsApp chat. No new app install, no complex dashboard, and no cybersecurity expertise required.</p>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top: 9mm;">
+        <h3>How judges can test it</h3>
+        <p>
+          Visit https://aegis-site-936220712653.us-central1.run.app or message
+          https://wa.me/94764460037. Send:
+          "URGENT: Your bank account will be suspended. Click http://fake-bank.example/login"
+          and expect an AEGIS scam-risk reply.
+        </p>
+      </div>
+
+      <div class="links" style="margin-top: 9mm;">
+        <div class="link-row" style="background: #0f172a;"><strong>Live website</strong><span>https://aegis-site-936220712653.us-central1.run.app</span></div>
+        <div class="link-row" style="background: #0f172a;"><strong>WhatsApp bot</strong><span>https://wa.me/94764460037</span></div>
+        <div class="link-row" style="background: #0f172a;"><strong>GitHub repo</strong><span>https://github.com/srimonishan/AEGIS</span></div>
+      </div>
+
+      <div class="footer"><span>AEGIS Scam Guard</span><span>Created by Srimonishan | srimonishan.com</span></div>
+    </section>
+  </body>
+</html>
