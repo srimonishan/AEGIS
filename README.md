@@ -77,10 +77,6 @@ The orchestrator isn't a single prompt-and-response call — it's a genuine mult
 
 <img src="docs/screenshots/gcp-console.png" alt="Google Cloud Console showing AEGIS's live Cloud Run traffic and metrics" width="100%">
 
-**A real scam message, caught and explained over WhatsApp:**
-
-<img src="docs/screenshots/whatsapp-demo.png" alt="WhatsApp conversation showing AEGIS correctly identifying a phishing message and explaining why" width="45%">
-
 ## WhatsApp Business Profile
 
 | Field | Value |
