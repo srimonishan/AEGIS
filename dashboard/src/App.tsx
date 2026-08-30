@@ -3,10 +3,19 @@ import { useAuthUser, SignInScreen, SignOutButton } from "./AuthGate";
 import { LiveFeed } from "./components/LiveFeed";
 import { PatternMap } from "./components/PatternMap";
 import { CaseDrilldown } from "./components/CaseDrilldown";
+import { MarketingSite } from "./MarketingSite";
 
 type Tab = "feed" | "patterns";
 
 export default function App() {
+  if (window.location.pathname !== "/ops") {
+    return <MarketingSite />;
+  }
+
+  return <OpsConsole />;
+}
+
+function OpsConsole() {
   const user = useAuthUser();
   const [tab, setTab] = useState<Tab>("feed");
   const [selectedId, setSelectedId] = useState<string | null>(null);
