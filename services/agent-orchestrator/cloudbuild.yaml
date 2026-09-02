@@ -5,8 +5,8 @@ steps:
       - -f
       - services/agent-orchestrator/Dockerfile
       - -t
-      - us-central1-docker.pkg.dev/$PROJECT_ID/aegis/orchestrator:v4
+      - us-central1-docker.pkg.dev/$PROJECT_ID/aegis/orchestrator:v5
       - .
 
 images:
-  - us-central1-docker.pkg.dev/$PROJECT_ID/aegis/orchestrator:v4
+  - us-central1-docker.pkg.dev/$PROJECT_ID/aegis/orchestrator:v5

@@ -4,7 +4,8 @@ import os
 from unittest.mock import AsyncMock, patch
 
 os.environ.setdefault("GCP_PROJECT_ID", "test-project")
-os.environ.setdefault("GEMINI_MODEL", "gemini-2.5-flash")
+os.environ.setdefault("GEMINI_MODEL", "gemini-3.5-flash")
+os.environ.setdefault("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash")
 os.environ.setdefault("META_ACCESS_TOKEN", "x")
 os.environ.setdefault("META_PHONE_NUMBER_ID", "x")
 os.environ.setdefault("GLOBAL_PATTERN_SALT", "test-salt")

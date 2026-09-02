@@ -2,7 +2,8 @@ import os
 from unittest.mock import patch
 
 os.environ.setdefault("GCP_PROJECT_ID", "test-project")
-os.environ.setdefault("GEMINI_MODEL", "gemini-2.5-flash")
+os.environ.setdefault("GEMINI_MODEL", "gemini-3.5-flash")
+os.environ.setdefault("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash")
 os.environ.setdefault("GLOBAL_PATTERN_SALT", "test-salt")
 os.environ.setdefault(
     "CONTACT_DIRECTORY_KMS_KEY", "projects/test/locations/us/keyRings/r/cryptoKeys/k"

@@ -129,6 +129,10 @@ resource "google_cloud_run_v2_service" "orchestrator" {
         value = var.gemini_model
       }
       env {
+        name  = "GEMINI_FALLBACK_MODELS"
+        value = var.gemini_fallback_models
+      }
+      env {
         name  = "GOOGLE_GENAI_USE_VERTEXAI"
         value = "true"
       }

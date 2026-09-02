@@ -18,6 +18,12 @@ variable "firestore_location" {
 variable "gemini_model" {
   description = "Gemini model id to use via Vertex AI (must be enabled in this project/region)."
   type        = string
+  default     = "gemini-3.5-flash"
+}
+
+variable "gemini_fallback_models" {
+  description = "Comma-separated fallback Gemini model ids used when the primary model is unavailable or quota-limited."
+  type        = string
   default     = "gemini-2.5-flash"
 }
 

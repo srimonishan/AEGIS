@@ -11,7 +11,8 @@
 project_id = "your-gcp-project-id"
 region     = "us-central1"
 
-gemini_model = "gemini-2.5-flash" # must be enabled in this project/region's Vertex AI
+gemini_model           = "gemini-3.5-flash" # primary model; must be enabled in this project/region's Vertex AI
+gemini_fallback_models = "gemini-2.5-flash" # keeps WhatsApp replies working if the primary is unavailable
 
 meta_phone_number_id    = "meta-phone-number-id"
 meta_graph_api_version = "v25.0"

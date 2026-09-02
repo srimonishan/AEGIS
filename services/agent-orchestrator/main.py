@@ -27,6 +27,7 @@ import data_deletion_commands
 import family_link_commands
 import whatsapp_sender
 from aegis_agent import build_agent
+from config import settings
 from guardrails import GuardrailPipeline
 from pubsub_auth import verify_push_request
 from schemas.events import IncomingReport
@@ -36,7 +37,7 @@ logger = logging.getLogger("aegis.orchestrator")
 
 app = FastAPI(title="AEGIS Agent Orchestrator")
 
-_agent = build_agent()
+_agents_by_model = {settings.gemini_model: build_agent(settings.gemini_model)}
 _APP_NAME = "aegis"
 
 
@@ -75,6 +76,8 @@ async def pubsub_push(request: Request):
     except Exception as exc:
         if _is_quota_exhausted(exc):
             logger.exception("report_processing_quota_exhausted", extra={"report_id": report.report_id})
+            if await _try_process_with_fallback_models(report):
+                return Response(status_code=200)
             whatsapp_sender.send_whatsapp_text(
                 report.user_id,
                 "I received your message, but AEGIS is temporarily rate-limited while analyzing it. "
@@ -83,6 +86,8 @@ async def pubsub_push(request: Request):
             return Response(status_code=200)
         if _is_model_unavailable(exc):
             logger.exception("report_processing_model_unavailable", extra={"report_id": report.report_id})
+            if await _try_process_with_fallback_models(report):
+                return Response(status_code=200)
             whatsapp_sender.send_whatsapp_text(
                 report.user_id,
                 "I received your message, but AEGIS cannot reach its AI analysis model right now. "
@@ -106,7 +111,48 @@ def _is_model_unavailable(exc: Exception) -> bool:
     return "NOT_FOUND" in text or "404" in text or ("model" in lower_text and "not found" in lower_text)
 
 
-async def _process_report(report: IncomingReport) -> None:
+def _agent_for_model(model: str):
+    if model not in _agents_by_model:
+        _agents_by_model[model] = build_agent(model)
+    return _agents_by_model[model]
+
+
+def _fallback_models() -> list[str]:
+    primary = settings.gemini_model
+    seen = {primary}
+    models: list[str] = []
+    for model in settings.gemini_fallback_models:
+        if model not in seen:
+            models.append(model)
+            seen.add(model)
+    return models
+
+
+async def _try_process_with_fallback_models(report: IncomingReport) -> bool:
+    for model in _fallback_models():
+        logger.warning(
+            "retrying_report_with_fallback_model",
+            extra={"report_id": report.report_id, "fallback_model": model},
+        )
+        try:
+            await _process_report(report, model=model)
+            logger.info(
+                "fallback_model_processed_report",
+                extra={"report_id": report.report_id, "fallback_model": model},
+            )
+            return True
+        except Exception as exc:
+            if _is_quota_exhausted(exc) or _is_model_unavailable(exc):
+                logger.exception(
+                    "fallback_model_failed",
+                    extra={"report_id": report.report_id, "fallback_model": model},
+                )
+                continue
+            raise
+    return False
+
+
+async def _process_report(report: IncomingReport, model: str | None = None) -> None:
     # Best-effort: register the contact so draft_protective_action can
     # reply. Never let this block scam analysis.
     contact_directory.remember_contact(report.user_id, report.wa_id)
@@ -151,7 +197,7 @@ async def _process_report(report: IncomingReport) -> None:
         },
     )
 
-    runner = InMemoryRunner(agent=_agent, app_name=_APP_NAME)
+    runner = InMemoryRunner(agent=_agent_for_model(model or settings.gemini_model), app_name=_APP_NAME)
     session_id = report.report_id
     await runner.session_service.create_session(
         app_name=_APP_NAME,

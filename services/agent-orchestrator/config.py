@@ -22,7 +22,12 @@ class Settings:
         # Must be a Gemini model id enabled in this project's Vertex AI
         # region. Configurable because exact model ids/availability change
         # faster than this codebase should need a redeploy for.
-        return os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+        return os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+
+    @property
+    def gemini_fallback_models(self) -> list[str]:
+        raw = os.environ.get("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash")
+        return [model.strip() for model in raw.split(",") if model.strip()]
 
     @property
     def pubsub_topic_followups(self) -> str:

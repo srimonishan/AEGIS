@@ -132,11 +132,11 @@ def _after_tool_callback(*, tool: BaseTool, args: dict, tool_context, tool_respo
     return None
 
 
-def build_agent() -> Agent:
+def build_agent(model: Optional[str] = None) -> Agent:
     return Agent(
         name="aegis_investigator",
         description="Investigates forwarded WhatsApp content for scam patterns and takes protective action.",
-        model=settings.gemini_model,
+        model=model or settings.gemini_model,
         instruction=INSTRUCTION,
         tools=ALL_TOOLS,
         mode="task",
