@@ -80,6 +80,14 @@ async def pubsub_push(request: Request):
                 "Please try again in a few minutes.",
             )
             return Response(status_code=200)
+        if _is_model_unavailable(exc):
+            logger.exception("report_processing_model_unavailable", extra={"report_id": report.report_id})
+            whatsapp_sender.send_whatsapp_text(
+                report.user_id,
+                "I received your message, but AEGIS cannot reach its AI analysis model right now. "
+                "Please try again shortly.",
+            )
+            return Response(status_code=200)
         logger.exception("report_processing_failed", extra={"report_id": report.report_id})
         return Response(status_code=500)  # transient failure -- let Pub/Sub retry
 
@@ -89,6 +97,11 @@ async def pubsub_push(request: Request):
 def _is_quota_exhausted(exc: Exception) -> bool:
     text = f"{type(exc).__name__}: {exc}"
     return "RESOURCE_EXHAUSTED" in text or "429" in text
+
+
+def _is_model_unavailable(exc: Exception) -> bool:
+    text = f"{type(exc).__name__}: {exc}"
+    return "NOT_FOUND" in text or "404" in text or "model" in text.lower() and "not found" in text.lower()
 
 
 async def _process_report(report: IncomingReport) -> None:

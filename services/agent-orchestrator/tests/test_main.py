@@ -4,7 +4,7 @@ import os
 from unittest.mock import AsyncMock, patch
 
 os.environ.setdefault("GCP_PROJECT_ID", "test-project")
-os.environ.setdefault("GEMINI_MODEL", "gemini-3.5-flash")
+os.environ.setdefault("GEMINI_MODEL", "gemini-2.5-flash")
 os.environ.setdefault("META_ACCESS_TOKEN", "x")
 os.environ.setdefault("META_PHONE_NUMBER_ID", "x")
 os.environ.setdefault("GLOBAL_PATTERN_SALT", "test-salt")
@@ -83,3 +83,17 @@ def test_quota_exhaustion_sends_user_visible_fallback_and_acks():
     mock_send.assert_called_once()
     assert mock_send.call_args[0][0] == "hashed-abc"
     assert "temporarily rate-limited" in mock_send.call_args[0][1]
+
+
+def test_model_not_found_sends_user_visible_fallback_and_acks():
+    with patch.object(
+        main,
+        "_process_report",
+        new=AsyncMock(side_effect=RuntimeError("404 NOT_FOUND Publisher model was not found")),
+    ), patch("whatsapp_sender.send_whatsapp_text", return_value=True) as mock_send:
+        r = client.post("/pubsub/push", json=_envelope(REPORT))
+
+    assert r.status_code == 200
+    mock_send.assert_called_once()
+    assert mock_send.call_args[0][0] == "hashed-abc"
+    assert "cannot reach its AI analysis model" in mock_send.call_args[0][1]

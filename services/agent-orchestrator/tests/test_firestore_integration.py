@@ -14,7 +14,7 @@ import pytest
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 os.environ.setdefault("GCP_PROJECT_ID", "test-project")
-os.environ.setdefault("GEMINI_MODEL", "gemini-3.5-flash")
+os.environ.setdefault("GEMINI_MODEL", "gemini-2.5-flash")
 os.environ.setdefault("META_ACCESS_TOKEN", "x")
 os.environ.setdefault("META_PHONE_NUMBER_ID", "x")
 os.environ.setdefault("GLOBAL_PATTERN_SALT", "test-salt")
