@@ -22,6 +22,7 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 import contact_directory
+import bot_info_commands
 import data_deletion_commands
 import family_link_commands
 import whatsapp_sender
@@ -101,7 +102,8 @@ def _is_quota_exhausted(exc: Exception) -> bool:
 
 def _is_model_unavailable(exc: Exception) -> bool:
     text = f"{type(exc).__name__}: {exc}"
-    return "NOT_FOUND" in text or "404" in text or "model" in text.lower() and "not found" in text.lower()
+    lower_text = text.lower()
+    return "NOT_FOUND" in text or "404" in text or ("model" in lower_text and "not found" in lower_text)
 
 
 async def _process_report(report: IncomingReport) -> None:
@@ -122,6 +124,10 @@ async def _process_report(report: IncomingReport) -> None:
     # data_deletion_commands.py's module docstring.
     if data_deletion_commands.try_handle_command(report):
         logger.info("handled_data_deletion_command", extra={"report_id": report.report_id})
+        return
+
+    if bot_info_commands.try_handle_command(report):
+        logger.info("handled_bot_info_command", extra={"report_id": report.report_id})
         return
 
     guardrail_result = GuardrailPipeline.run(report.text_content or "")
